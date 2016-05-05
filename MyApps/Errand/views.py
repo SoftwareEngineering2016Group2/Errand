@@ -26,7 +26,7 @@ def form_valid(form_model,request):
 
 def FormValid(request, form_model):
 	form = form_model(request.POST)
-	return form.is_valid()
+	return form.is_valid(), form.cleaned_data
 	
 class Userinfo_Controller:
 
@@ -61,13 +61,12 @@ class Account_Controller:
 		return account
 
 	def CreateAccount(self, username, password):
-		#newrole = role.objects.create(nickname=nickname)
 		#activecode = random.randint(1000, 9999)
 		userinfo = userinfo_controller.CreateUserinfo()
 		activecode = 1111
 		account, created = Account.objects.get_or_create(username=username,
 			defaults = {'password' : password, 'activecode' : activecode, 'userinfo' : userinfo})
-		print (created)
+		#print (created)
 		if (created):
 			self.SendEmail(username, activecode)
 		else:
@@ -76,7 +75,7 @@ class Account_Controller:
 
 	def SendEmail(self, username, activecode):
 		email =  username + '@pku.edu.cn'
-		subject, form_email, to = u'Errand Account Active', 'sunmeng94@163.com', email
+		subject, form_email, to = u'Errand Account Active', 'sunmengdexiaohao1@163.com', email
 		text_content = 'Please input the code in Errand to active your account : ' + str(activecode)
 		msg = EmailMultiAlternatives(subject, text_content, form_email, [to])
 		msg.send()
@@ -91,13 +90,11 @@ class Account_Controller:
 	@csrf_exempt
 	@RSA_valid
 	def Register(self, request):
-		if (FormValid(request, forms.RegisterForm) == False):
+		valid, data = FormValid(request, forms.RegisterForm)
+		if (valid == False):
 			return HttpResponse('Form format error.')
-		username = request.POST.get('username', '')
-		password = request.POST.get('password', '')
-		#nickname = request.POST.get('nickname', '')
 
-		account, created = self.CreateAccount(username, password)
+		account, created = self.CreateAccount(data['username'], data['password'])
 		if (created):
 			return HttpResponse("We have sent an active-code to your PKU mail.")
 		else:
@@ -106,15 +103,13 @@ class Account_Controller:
 	@csrf_exempt
 	@RSA_valid
 	def Active(self, request):
-		if (FormValid(request, forms.ActiveForm) == False):
+		valid, data = FormValid(request, forms.ActiveForm)
+		if (valid == False):
 			return HttpResponse('Form format error.')
-		username = request.POST.get('username', '')
-		password = request.POST.get('password', '')
-		activecode = request.POST.get('activecode', '')
-		account = self.FindByUsernameAndPassword(username, password)
+		account = self.FindByUsernameAndPassword(data['username'], data['password'])
 		if account == None:
 			return HttpResponse('The username isn\'t existed, or wrong password.' )
-		elif account.Active(activecode) == True:
+		elif account.Active(data['activecode']) == True:
 			return HttpResponse(account.userinfo.nickname)
 		else:
 			return HttpResponse('Wrong Activecode.')
@@ -122,11 +117,10 @@ class Account_Controller:
 	@csrf_exempt
 	@RSA_valid
 	def LogIn(self, request):
-		if (FormValid(request, forms.LogInForm) == False):
+		valid, data = FormValid(request, forms.LogInForm)
+		if (valid == False):
 			return HttpResponse('Form format error.')
-		username = request.POST.get('username', '')
-		password = request.POST.get('password', '')
-		account = self.FindByUsernameAndPassword(username, password)	
+		account = self.FindByUsernameAndPassword(data['username'], data['password'])	
 		if account == None:
 			return HttpResponse('The username isn\'t existed, or wrong password.' )
 		elif account.active == False:
@@ -135,14 +129,14 @@ class Account_Controller:
 		else:
 			#request.session['role'] = myaccount.role
 			return HttpResponse('Log in successfully.')
+
 	@csrf_exempt
 	@RSA_valid
 	def LogOut(self, request):
-		if (FormValid(request, forms.LogOutForm) == False):
+		valid, data = FormValid(request, forms.LogOutForm)
+		if (valid == False):
 			return HttpResponse('Form format error.')
-		username = request.POST.get('username', '')
-		password = request.POST.get('password', '')
-		account = self.FindByUsernameAndPassword(username, password)	
+		account = self.FindByUsernameAndPassword(data['username'], data['password'])	
 		if account == None:
 			return HttpResponse('The username isn\'t existed, or wrong password.' )
 		else:
@@ -152,16 +146,14 @@ class Account_Controller:
 	@csrf_exempt
 	@RSA_valid
 	def ChangePassword(self, request):
-		if (FormValid(request, forms.ChangePasswordForm) == False):
+		valid, data = FormValid(request, forms.ChangePasswordForm)
+		if (valid == False):
 			return HttpResponse('Form format error.')
-		username = request.POST.get('username', '')
-		password = request.POST.get('password', '')
-		newpassword = request.POST.get('newpassword', '')
-		account = self.FindByUsernameAndPassword(username, password)	
+		account = self.FindByUsernameAndPassword(data['username'], data['password'])	
 		if account == None:
 			return HttpResponse('The username isn\'t existed, or wrong password.' )
 		else:
-			account.ChangePassword(newpassword)
+			account.ChangePassword(data['newpassword'])
 			return HttpResponse('Change password successfully.')
 
 
