@@ -9,5 +9,7 @@ urlpatterns = [
 	url(r'^login$', views.account_controller.LogIn),
 	url(r'^logout$', views.account_controller.LogOut),
 	url(r'^changepassword$', views.account_controller.ChangePassword),
+	url(r'^changeuserinfo$', views.userinfo_controller.ChangeUserinfo),
+	url(r'^getuserinfo$', views.userinfo_controller.GetUserinfo),
 	#url(r'^register')
 ]

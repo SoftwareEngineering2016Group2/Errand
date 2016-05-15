@@ -22,20 +22,6 @@ def form_valid(form_model,request):
 	return Delegator(Fn)'''
 
 
-
-
-def FormValid(request, form_model):
-	form = form_model(request.POST)
-	return form.is_valid(), form.cleaned_data
-	
-class Userinfo_Controller:
-
-	def CreateUserinfo(self):
-		return Userinfo.objects.create()
-
-userinfo_controller = Userinfo_Controller()
-
-
 def RSA_valid(Fn):
 	def Delegator(self, request):
 		pubkey = request.session.get('pubkey', None)
@@ -44,6 +30,46 @@ def RSA_valid(Fn):
 			return HttpResponse('Please request for RSA')
 		return Fn(self, request)
 	return Delegator
+
+def Logged_in(Fn):
+	def Delegator(self, request):
+		username = request.session.get('username', None)
+		if username == None:
+			return HttpResponse('Please log in.')
+		return Fn(self, request)
+	return Delegator
+
+def FormValid(request, form_model):
+	form = form_model(request.POST)
+	return form.is_valid(), form.cleaned_data
+
+	
+class Userinfo_Controller:
+
+	def CreateUserinfo(self):
+		return Userinfo.objects.create()
+		
+	@csrf_exempt
+	@Logged_in
+	def GetUserinfo(self, request):
+		userinfo = account_controller.FindByUsername(request.session['username']).userinfo
+		#print (userinfo)
+		return HttpResponse(userinfo.ToJSON())
+	
+	@csrf_exempt
+	@Logged_in
+	def ChangeUserinfo(self, request):
+		valid, data = FormValid(request, forms.UserinfoForm)
+		if (valid == False):
+			return HttpResponse('Form format error.')
+		userinfo = account_controller.FindByUsername(request.session['username']).userinfo
+		userinfo.ChangeUserinfo(data)
+		return HttpResponse('ChangeuUserinfo successfully.')
+
+userinfo_controller = Userinfo_Controller()
+
+
+
 class Account_Controller:
 
 	def FindByUsername(self, username):
@@ -63,6 +89,7 @@ class Account_Controller:
 	def CreateAccount(self, username, password):
 		#activecode = random.randint(1000, 9999)
 		userinfo = userinfo_controller.CreateUserinfo()
+		print (userinfo.nickname, userinfo.sex, userinfo.birthday, userinfo.signature)
 		activecode = 1111
 		account, created = Account.objects.get_or_create(username=username,
 			defaults = {'password' : password, 'activecode' : activecode, 'userinfo' : userinfo})
@@ -80,11 +107,14 @@ class Account_Controller:
 		msg = EmailMultiAlternatives(subject, text_content, form_email, [to])
 		msg.send()
 
-
+	@csrf_exempt
 	def RSA(self, request):
 		(pubkey, privkey) = rsa.newkeys(1024)
 		request.session['pubkey'] = pubkey
 		request.session['privkey'] = privkey
+		'''return render(request, 'Errand/index.html', {
+           'form': forms.UserinfoForm,
+        })'''
 		return HttpResponse(pubkey)
 
 	@csrf_exempt
@@ -127,7 +157,7 @@ class Account_Controller:
 			self.SendEmail(account.username, account.activecode)
 			return HttpResponse('Please active account first. We have sent the active code to your email.')
 		else:
-			#request.session['role'] = myaccount.role
+			request.session['username'] = account.username
 			return HttpResponse('Log in successfully.')
 
 	@csrf_exempt
@@ -140,7 +170,7 @@ class Account_Controller:
 		if account == None:
 			return HttpResponse('The username isn\'t existed, or wrong password.' )
 		else:
-			#request.session['role'] = myaccount.role
+			request.session['username'] = None
 			return HttpResponse('Log out successfully.')
 
 	@csrf_exempt
