@@ -2,10 +2,12 @@ from django.shortcuts import render
 from django.http import HttpResponse
 import rsa
 from . import forms
-from .models import Account, Userinfo
+from .models import Account, Userinfo, Task, TaskAction
 from django.views.decorators.csrf import csrf_exempt
 from django.core.mail import send_mail
 from django.core.mail import EmailMultiAlternatives
+from django.core import serializers
+from django.utils import timezone
 import random
 
 '''
@@ -43,18 +45,65 @@ def FormValid(request, form_model):
 	form = form_model(request.POST)
 	return form.is_valid(), form.cleaned_data
 
+class Task_Controller:
+	def FindTask(self, pk):
+		try:
+			task = Task.objects.get(pk=pk)
+		except Task.DoesNotExist:
+			task = None
+		return task
+
+	def CreateTask(self, create_account, data):
+		return Task.objects.create(create_account=create_account, create_time=timezone.now(), \
+			headline=data['headline'], detail=data['detail'], reward=data['reward'])
+
+	@csrf_exempt
+	@Logged_in
+	def AddTask(self, request):
+		valid, data = FormValid(request, forms.AddTaskForm)
+		if (valid == False):
+			return HttpResponse('Form format error.')
+		task = self.CreateTask(account_controller.FindByUsername(request.session['username']), data)
+		print (task.create_account.username)
+		return HttpResponse(serializers.serialize("json", [task]))
+
+	def CreateTaskAction(self, task, data):
+		return TaskAction.objects.create(task_belong=task, action=data['action'], \
+			start_time=data['start_time'], end_time=data['end_time'], place=data['place'])
+
+	@csrf_exempt
+	@Logged_in
+	def AddTaskAction(self, request):
+		valid, data = FormValid(request, forms.TaskActionForm)
+		if (valid == False):
+			return HttpResponse('Form format error.')
+		print (data['pk'])
+		print (data['start_time'])
+		print (data['end_time'])
+		print (data['place'])
+		print (data['action'])
+		task = self.FindTask(data['pk'])
+		if (task == None):
+			return HttpResponse('No such Task')
+		else:
+			taskAction = self.CreateTaskAction(task, data)
+			#print (task.task_actions.all())
+			return HttpResponse(serializers.serialize("json", task.task_actions.all()))
+			#return HttpResponse(serializers.serialize("json", [taskAction]))
 	
+
+task_controller = Task_Controller();
+
 class Userinfo_Controller:
 
 	def CreateUserinfo(self):
 		return Userinfo.objects.create()
-		
+
 	@csrf_exempt
 	@Logged_in
 	def GetUserinfo(self, request):
 		userinfo = account_controller.FindByUsername(request.session['username']).userinfo
-		#print (userinfo)
-		return HttpResponse(userinfo.ToJSON())
+		return HttpResponse(serializers.serialize("json", [userinfo]))
 	
 	@csrf_exempt
 	@Logged_in

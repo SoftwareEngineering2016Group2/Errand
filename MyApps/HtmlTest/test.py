@@ -10,7 +10,6 @@
 import urllib
 import urllib2
 import cookielib
-
 # cookie set
 # 用来保持会话
 cj = cookielib.LWPCookieJar()
@@ -47,3 +46,9 @@ print(geturlopen('http://127.0.0.1:8000/Errand/getuserinfo').read())
 print(geturlopen('http://127.0.0.1:8000/Errand/changeuserinfo', \
     {'nickname': 'Jackson', 'sex' : 'M', 'phone_number' : '13088888888', 'birthday' : '1994-10-11', 'signature' : 'aaaa'}).read())
 print(geturlopen('http://127.0.0.1:8000/Errand/getuserinfo').read())
+print(geturlopen('http://127.0.0.1:8000/Errand/addtask', \
+    {'headline': 'qu kuai di', 'detail' : 'qkd', 'reward' : 'ji tui fan'}).read())
+print(geturlopen('http://127.0.0.1:8000/Errand/addtaskaction', \
+    {'pk': 12, 'start_time' : '2016-10-11 12:00:00', 'end_time' : '2016-10-11 13:00:00', 'place' : 'er jiao', 'action' : 'gei wo '}).read())
+
+

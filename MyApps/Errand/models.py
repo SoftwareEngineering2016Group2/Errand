@@ -31,8 +31,6 @@ class Account(models.Model):
 		return True;
 	def __unicode__(self):
 		return self.username
-	def ToJSON(self):
-		return json.dumps(dict([(attr, getattr(self, attr)) for attr in [f.name for f in self._meta.fields]]), default=default)
 
 class Userinfo(models.Model):
 	MALE = 'M'
@@ -59,7 +57,31 @@ class Userinfo(models.Model):
 
 	def __unicode__(self):
 		return self.nickname
-	def ToJSON(self):
-		return json.dumps(dict([(attr, getattr(self, attr)) for attr in [f.name for f in self._meta.fields]]), default=default)
+	
 
+class Task(models.Model):
+	create_account = models.ForeignKey('Account', related_name='created_account')
+	create_time = models.DateTimeField(default=None)
+	WAITING = 'W'
+	ACCEPTED = 'A'
+	CLOSED = 'C'
+	STATUS_CHOICES = (
+		(WAITING, 'Waiting'),
+		(ACCEPTED, 'Accepted'),
+		(CLOSED, 'Closed'),
+	)
+	status = models.CharField(max_length=1, choices=STATUS_CHOICES, default=WAITING)
+	headline = models.CharField(max_length=16, default='New Task')
+	detail = models.CharField(max_length=128, default='New Task')
+	response_accounts = models.ManyToManyField(Account)
+	execute_accounts = models.ForeignKey('Account', null=True, related_name='execute_account')
+	#task_actions = models.ManyToManyField(TaskAction)
+	reward = models.CharField(max_length=16, default='1 RMB')
+
+class TaskAction(models.Model):
+	start_time = models.DateTimeField(default=None)
+	end_time = models.DateTimeField(default=None)
+	place = models.CharField(max_length=16, default="classroom")
+	action = models.CharField(max_length=50, default="do something")
+	task_belong = models.ForeignKey('Task', related_name='task_actions')
 
