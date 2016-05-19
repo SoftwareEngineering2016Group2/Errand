@@ -14,10 +14,6 @@ class LogInForm(forms.Form):
 	username = forms.CharField(max_length=16, label='username')
 	password = forms.CharField(max_length=16, label='password')
 
-class LogOutForm(forms.Form):
-	username = forms.CharField(max_length=16, label='username')
-	password = forms.CharField(max_length=16, label='password')
-
 class ChangePasswordForm(forms.Form):
 	username = forms.CharField(max_length=16, label='username')
 	password = forms.CharField(max_length=16, label='password')
@@ -35,9 +31,19 @@ class AddTaskForm(forms.Form):
 	detail = forms.CharField(max_length=128, label='Detail')
 	reward = forms.CharField(max_length=16, label='Reward')
 
-class TaskActionForm(forms.Form):
+class AddTaskActionForm(forms.Form):
 	pk = forms.CharField(max_length=16, label="Task ID")
 	start_time = forms.DateTimeField(label='Start Time')
 	end_time = forms.DateTimeField(label='End Time')
 	place = forms.CharField(max_length=16, label='Place')
 	action = forms.CharField(max_length=50, label='Action')
+
+class ChangeTaskActionForm(forms.Form):
+	pk = forms.CharField(max_length=16, label="TaskAction ID")
+	start_time = forms.DateTimeField(label='Start Time')
+	end_time = forms.DateTimeField(label='End Time')
+	place = forms.CharField(max_length=16, label='Place')
+	action = forms.CharField(max_length=50, label='Action')
+
+class RemoveTaskActionForm(forms.Form):
+	pk = forms.CharField(max_length=16, label="TaskAction ID")

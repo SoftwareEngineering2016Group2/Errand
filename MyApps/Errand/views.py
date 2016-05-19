@@ -52,6 +52,12 @@ class Task_Controller:
 		except Task.DoesNotExist:
 			task = None
 		return task
+	def FindTaskAction(self, pk):
+		try:
+			taskAction = TaskAction.objects.get(pk=pk)
+		except TaskAction.DoesNotExist:
+			taskAction = None
+		return taskAction
 
 	def CreateTask(self, create_account, data):
 		return Task.objects.create(create_account=create_account, create_time=timezone.now(), \
@@ -74,22 +80,57 @@ class Task_Controller:
 	@csrf_exempt
 	@Logged_in
 	def AddTaskAction(self, request):
-		valid, data = FormValid(request, forms.TaskActionForm)
+		valid, data = FormValid(request, forms.AddTaskActionForm)
 		if (valid == False):
 			return HttpResponse('Form format error.')
-		print (data['pk'])
-		print (data['start_time'])
-		print (data['end_time'])
-		print (data['place'])
-		print (data['action'])
 		task = self.FindTask(data['pk'])
+
 		if (task == None):
-			return HttpResponse('No such Task')
-		else:
-			taskAction = self.CreateTaskAction(task, data)
+			return HttpResponse('No such Task.')
+		if (task.create_account.username != request.session.get('username', None)):
+			return HttpResponse("No Permission.")
+		if (task.status != 'W'):
+			return HttpResponse("The Task is not in waiting status.")
+		if (task.task_actions.count() > 5):
+			return HttpResponse("The task have too many Actions.")
+
+		taskAction = self.CreateTaskAction(task, data)
 			#print (task.task_actions.all())
-			return HttpResponse(serializers.serialize("json", task.task_actions.all()))
-			#return HttpResponse(serializers.serialize("json", [taskAction]))
+		return HttpResponse(serializers.serialize("json", task.task_actions.all()))
+		#return HttpResponse(serializers.serialize("json", [taskAction]))
+
+	@csrf_exempt
+	@Logged_in
+	def ChangeTaskAction(self, request):
+		valid, data = FormValid(request, forms.ChangeTaskActionForm)
+		if (valid == False):
+			return HttpResponse('Form format error.')
+		taskAction = self.FindTaskAction(data['pk'])	
+		if (taskAction == None):
+			return HttpResponse('The task action isn\'t existed.' )
+		if (taskAction.task_belong.create_account.username != request.session.get('username', None)):
+			return HttpResponse("No Permission.")
+		if (taskAction.task_belong.status != 'W'):
+			return HttpResponse("The Task is not in waiting status.")
+		taskAction.ChangeTaskAction(data)
+		return HttpResponse(serializers.serialize("json", taskAction.task_belong.task_actions.all()))
+	
+	@csrf_exempt
+	@Logged_in
+	def RemoveTaskAction(self, request):
+		valid, data = FormValid(request, forms.RemoveTaskActionForm)
+		if (valid == False):
+			return HttpResponse('Form format error.')
+		taskAction = self.FindTaskAction(data['pk'])	
+		if (taskAction == None):
+			return HttpResponse('The task action isn\'t existed.' )
+		if (taskAction.task_belong.create_account.username != request.session.get('username', None)):
+			return HttpResponse("No Permission.")
+		if (taskAction.task_belong.status != 'W'):
+			return HttpResponse("The Task is not in waiting status.")
+		task = taskAction.task_belong;
+		taskAction.delete()
+		return HttpResponse(serializers.serialize("json", task.task_actions.all()))
 	
 
 task_controller = Task_Controller();
@@ -210,17 +251,9 @@ class Account_Controller:
 			return HttpResponse('Log in successfully.')
 
 	@csrf_exempt
-	@RSA_valid
 	def LogOut(self, request):
-		valid, data = FormValid(request, forms.LogOutForm)
-		if (valid == False):
-			return HttpResponse('Form format error.')
-		account = self.FindByUsernameAndPassword(data['username'], data['password'])	
-		if account == None:
-			return HttpResponse('The username isn\'t existed, or wrong password.' )
-		else:
-			request.session['username'] = None
-			return HttpResponse('Log out successfully.')
+		request.session['username'] = None
+		return HttpResponse('Log out successfully.')
 
 	@csrf_exempt
 	@RSA_valid

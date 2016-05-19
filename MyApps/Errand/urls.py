@@ -13,5 +13,7 @@ urlpatterns = [
 	url(r'^getuserinfo$', views.userinfo_controller.GetUserinfo),
 	url(r'^addtask$', views.task_controller.AddTask),
 	url(r'^addtaskaction$', views.task_controller.AddTaskAction),
+	url(r'^changetaskaction$', views.task_controller.ChangeTaskAction),
+	url(r'^removetaskaction$', views.task_controller.RemoveTaskAction),
 	#url(r'^register')
 ]

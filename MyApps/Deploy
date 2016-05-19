@@ -1,0 +1,24 @@
+1. Install software and package such as mod_wsgi etc.
+
+2. Modify /etc/apache2/sites-available/000-default.conf:
+	<VirtualHost *:8002>
+		DocumentRoot /home/group2/www/html
+		ServerName www.errand.com
+		ServerAlias errand.com
+		ServerAdmin sunmeng94@163.com
+		WSGIScriptAlias / /home/group2/MyApps/MyApps/wsgi.py
+		<Directory /home/group2/MyApps/MyApps>
+		<Files wsgi.py>
+			Require all granted
+		</Files>
+		</Directory>
+	</VirtualHost>
+
+3.Reload apache2: 
+	sudo service apache2 reload
+
+4.Change Permissions:
+	sudo chgrp www-data MyApps
+	sudo chmod g+w MyApps
+	sudo chgrp www-data MyApps/db.sqlite3
+	sudo chmod g+w MyApps/db.sqlite3 

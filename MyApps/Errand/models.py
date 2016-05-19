@@ -84,4 +84,11 @@ class TaskAction(models.Model):
 	place = models.CharField(max_length=16, default="classroom")
 	action = models.CharField(max_length=50, default="do something")
 	task_belong = models.ForeignKey('Task', related_name='task_actions')
+	def ChangeTaskAction(self, data):
+		self.start_time = data['start_time']
+		self.end_time = data['end_time']
+		self.place = data['place']
+		self.action = data['action']
+		self.save()
+		return True
 
