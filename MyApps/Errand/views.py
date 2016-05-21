@@ -8,22 +8,10 @@ from django.core.mail import send_mail
 from django.core.mail import EmailMultiAlternatives
 from django.core import serializers
 from django.utils import timezone
+from django.db import transaction
 import random
 
-'''
-def form_valid(form_model,request):
-	form = form_model(request.POST);
-	if form.is_valid():
-		def Delegator(Fn):
-			return Fn
-	else:
-		def Delegator(Fn):
-			def InvalidForm(self, request):
-				return HttpResponse('Form format error.')
-			return InvalidForm
-	return Delegator(Fn)'''
-
-
+#----- This Delegator is used to judge if RSA key is generated -----
 def RSA_valid(Fn):
 	def Delegator(self, request):
 		pubkey = request.session.get('pubkey', None)
@@ -33,6 +21,7 @@ def RSA_valid(Fn):
 		return Fn(self, request)
 	return Delegator
 
+#----- This Delegator is used to judge if the user is logged in -----
 def Logged_in(Fn):
 	def Delegator(self, request):
 		username = request.session.get('username', None)
@@ -41,23 +30,20 @@ def Logged_in(Fn):
 		return Fn(self, request)
 	return Delegator
 
+#----- Verify the legitimacy of the form -----
 def FormValid(request, form_model):
 	form = form_model(request.POST)
 	return form.is_valid(), form.cleaned_data
 
+
+#----- Class : Task Controller -----
 class Task_Controller:
 	def FindTask(self, pk):
 		try:
-			task = Task.objects.get(pk=pk)
+			task = Task.objects.select_for_update().get(pk=pk)
 		except Task.DoesNotExist:
 			task = None
 		return task
-	def FindTaskAction(self, pk):
-		try:
-			taskAction = TaskAction.objects.get(pk=pk)
-		except TaskAction.DoesNotExist:
-			taskAction = None
-		return taskAction
 
 	def CreateTask(self, create_account, data):
 		return Task.objects.create(create_account=create_account, create_time=timezone.now(), \
@@ -70,8 +56,44 @@ class Task_Controller:
 		if (valid == False):
 			return HttpResponse('Form format error.')
 		task = self.CreateTask(account_controller.FindByUsername(request.session['username']), data)
-		print (task.create_account.username)
 		return HttpResponse(serializers.serialize("json", [task]))
+
+	@csrf_exempt
+	@Logged_in
+	def ChangeTask(self, request):
+		valid, data = FormValid(request, forms.ChangeTaskForm)
+		if (valid == False):
+			return HttpResponse('Form format error.')
+		with transaction.atomic():
+			task = self.FindTask(data['pk'])	
+			if (task == None):
+				return HttpResponse('The task isn\'t existed.' )
+			if (task.CanChange(request.session.get('username', None)) == False):
+				return HttpResponse("Failed")
+			task.ChangeTask(data)
+			return HttpResponse(serializers.serialize("json", [task]))
+	
+	@csrf_exempt
+	@Logged_in
+	def RemoveTask(self, request):
+		valid, data = FormValid(request, forms.RemoveTaskForm)
+		if (valid == False):
+			return HttpResponse('Form format error.')
+		with transaction.atomic():
+			task = self.FindTask(data['pk'])	
+			if (task == None):
+				return HttpResponse('The task isn\'t existed.' )
+			if (task.CanChange(request.session.get('username', None)) == False):
+				return HttpResponse("Failed")
+			task.delete()
+			return HttpResponse('The task has been removed.')
+
+	def FindTaskAction(self, pk):
+		try:
+			taskAction = TaskAction.objects.select_for_update().get(pk=pk)
+		except TaskAction.DoesNotExist:
+			taskAction = None
+		return taskAction
 
 	def CreateTaskAction(self, task, data):
 		return TaskAction.objects.create(task_belong=task, action=data['action'], \
@@ -83,21 +105,16 @@ class Task_Controller:
 		valid, data = FormValid(request, forms.AddTaskActionForm)
 		if (valid == False):
 			return HttpResponse('Form format error.')
-		task = self.FindTask(data['pk'])
-
-		if (task == None):
-			return HttpResponse('No such Task.')
-		if (task.create_account.username != request.session.get('username', None)):
-			return HttpResponse("No Permission.")
-		if (task.status != 'W'):
-			return HttpResponse("The Task is not in waiting status.")
-		if (task.task_actions.count() > 5):
-			return HttpResponse("The task have too many Actions.")
-
-		taskAction = self.CreateTaskAction(task, data)
-			#print (task.task_actions.all())
-		return HttpResponse(serializers.serialize("json", task.task_actions.all()))
-		#return HttpResponse(serializers.serialize("json", [taskAction]))
+		with transaction.atomic():
+			task = self.FindTask(data['pk'])	
+			if (task == None):
+				return HttpResponse('The task isn\'t existed.')
+			if (task.CanChange(request.session.get('username', None)) == False):
+				return HttpResponse("Failed")
+			if (task.task_actions.count() > 5):
+				return HttpResponse("The task have too many Actions.")
+			taskAction = self.CreateTaskAction(task, data)
+			return HttpResponse(serializers.serialize("json", task.task_actions.all()))
 
 	@csrf_exempt
 	@Logged_in
@@ -105,36 +122,120 @@ class Task_Controller:
 		valid, data = FormValid(request, forms.ChangeTaskActionForm)
 		if (valid == False):
 			return HttpResponse('Form format error.')
-		taskAction = self.FindTaskAction(data['pk'])	
-		if (taskAction == None):
-			return HttpResponse('The task action isn\'t existed.' )
-		if (taskAction.task_belong.create_account.username != request.session.get('username', None)):
-			return HttpResponse("No Permission.")
-		if (taskAction.task_belong.status != 'W'):
-			return HttpResponse("The Task is not in waiting status.")
-		taskAction.ChangeTaskAction(data)
-		return HttpResponse(serializers.serialize("json", taskAction.task_belong.task_actions.all()))
-	
+		with transaction.atomic():
+			taskAction = self.FindTaskAction(data['pk'])	
+			if (taskAction == None):
+				return HttpResponse('The task action isn\'t existed.' )
+			task = taskAction.task_belong;
+			if (task.CanChange(request.session.get('username', None)) == False):
+				return HttpResponse("Failed")
+			taskAction.ChangeTaskAction(data)
+			return HttpResponse(serializers.serialize("json", task.task_actions.all()))
+		
 	@csrf_exempt
 	@Logged_in
 	def RemoveTaskAction(self, request):
 		valid, data = FormValid(request, forms.RemoveTaskActionForm)
 		if (valid == False):
 			return HttpResponse('Form format error.')
-		taskAction = self.FindTaskAction(data['pk'])	
-		if (taskAction == None):
-			return HttpResponse('The task action isn\'t existed.' )
-		if (taskAction.task_belong.create_account.username != request.session.get('username', None)):
-			return HttpResponse("No Permission.")
-		if (taskAction.task_belong.status != 'W'):
-			return HttpResponse("The Task is not in waiting status.")
-		task = taskAction.task_belong;
-		taskAction.delete()
-		return HttpResponse(serializers.serialize("json", task.task_actions.all()))
+		with transaction.atomic():
+			taskAction = self.FindTaskAction(data['pk'])	
+			if (taskAction == None):
+				return HttpResponse('The task action isn\'t existed.' )
+			task = taskAction.task_belong;
+			if (task.CanChange(request.session.get('username', None)) == False):
+				return HttpResponse("Failed")
+			taskAction.delete()
+			return HttpResponse(serializers.serialize("json", task.task_actions.all()))
+
+	@csrf_exempt
+	@Logged_in
+	def ResponseTask(self, request):
+		valid, data = FormValid(request, forms.ResponseTaskForm)
+		if (valid == False):
+			return HttpResponse('Form format error.')
+		with transaction.atomic():
+			task = self.FindTask(data['pk'])
+			account = account_controller.FindByUsername(request.session['username'])
+			if (task == None):
+				return HttpResponse('The task isn\'t existed.')
+			if (task.InWaiting() == False):
+				return HttpResponse("The Task is not in waiting status.")
+			task.response_accounts.add(account)
+			return HttpResponse(serializers.serialize("json", account.response_tasks.all()))
+
+	@csrf_exempt
+	@Logged_in
+	def SelectTaskExecutor(self, request):
+		valid, data = FormValid(request, forms.SelectTaskExecutorForm)
+		if (valid == False):
+			return HttpResponse('Form format error.')
+		with transaction.atomic():
+			task = self.FindTask(data['pk'])
+			if (task == None):
+				return HttpResponse('The task isn\'t existed.')
+			account = account_controller.FindByUsername(data['username'])
+			if account == None:
+				return HttpResponse('The username isn\'t existed')
+			if (task.CanSelect(request.session.get('username', None)) == False):
+				return HttpResponse("Failed")
+			try:
+				response_account = task.response_accounts.get(username=data['username'])
+			except Account.DoesNotExist:
+				response_account = None
+			if (response_account == None):
+				return HttpResponse("The user did\'t response the task.")
+			task.Accept(response_account)
+			return HttpResponse(serializers.serialize("json", [task]))
+
+	@csrf_exempt
+	@Logged_in
+	def CloseTask(self, request):
+		valid, data = FormValid(request, forms.CloseTaskForm)
+		if (valid == False):
+			return HttpResponse('Form format error.')
+		with transaction.atomic():
+			task = self.FindTask(data['pk'])
+			if (task == None):
+				return HttpResponse('The task isn\'t existed.')
+			if (task.CanClose(request.session.get('username', None)) == False):
+				return HttpResponse("Failed")
+			task.Close()
+			return HttpResponse(serializers.serialize("json", [task]))
 	
+	@csrf_exempt
+	@Logged_in
+	def CommentTask(self, request):
+		valid, data = FormValid(request, forms.CommentTaskForm)
+		if (valid == False):
+			return HttpResponse('Form format error.')
+		with transaction.atomic():
+			task = self.FindTask(data['pk'])
+			if (task == None):
+				return HttpResponse('The task isn\'t existed.')
+			if (task.CanComment(request.session.get('username', None)) == False):
+				return HttpResponse("Failed")
+			task.Comment(data)
+			return HttpResponse(serializers.serialize("json", [task]))
+
+	@csrf_exempt
+	@Logged_in
+	def BrowseAllTask(self, request):
+		valid, data = FormValid(request, forms.BrowseAllTaskForm)
+		if (valid == False):
+			return HttpResponse('Form format error.')
+		with transaction.atomic():
+			tasks = Task.objects.filter(status='W', pk__lt=data['pk']).order_by('-pk')
+			if (tasks.count() < 5):
+				num = tasks.count()
+			else: num = 5
+			return HttpResponse(serializers.serialize("json", tasks[0:num]))
 
 task_controller = Task_Controller();
+#----- End of Task Controller -----
 
+
+#----- Class : Userinfo Controller -----
 class Userinfo_Controller:
 
 	def CreateUserinfo(self):
@@ -142,9 +243,10 @@ class Userinfo_Controller:
 
 	@csrf_exempt
 	@Logged_in
-	def GetUserinfo(self, request):
-		userinfo = account_controller.FindByUsername(request.session['username']).userinfo
-		return HttpResponse(serializers.serialize("json", [userinfo]))
+	def GetMyUserinfo(self, request):
+		with transaction.atomic():
+			userinfo = account_controller.FindByUsername(request.session['username']).userinfo
+			return HttpResponse(serializers.serialize("json", [userinfo]))
 	
 	@csrf_exempt
 	@Logged_in
@@ -152,26 +254,27 @@ class Userinfo_Controller:
 		valid, data = FormValid(request, forms.UserinfoForm)
 		if (valid == False):
 			return HttpResponse('Form format error.')
-		userinfo = account_controller.FindByUsername(request.session['username']).userinfo
-		userinfo.ChangeUserinfo(data)
-		return HttpResponse('ChangeuUserinfo successfully.')
+		with transaction.atomic():
+			userinfo = account_controller.FindByUsername(request.session['username']).userinfo
+			userinfo.ChangeUserinfo(data)
+			return HttpResponse('Change Userinfo successfully.')
 
 userinfo_controller = Userinfo_Controller()
+#----- End of Userinfo Controller -----
 
-
-
+#----- Class : Account Controller -----
 class Account_Controller:
 
 	def FindByUsername(self, username):
 		try:
-			account = Account.objects.get(username=username)
+			account = Account.objects.select_for_update().get(username=username)
 		except Account.DoesNotExist:
 			account = None
 		return account
 
 	def FindByUsernameAndPassword(self, username, password):
 		try:
-			account = Account.objects.get(username=username, password=password)
+			account = Account.objects.select_for_update().get(username=username, password=password)
 		except Account.DoesNotExist:
 			account = None
 		return account
@@ -179,11 +282,9 @@ class Account_Controller:
 	def CreateAccount(self, username, password):
 		#activecode = random.randint(1000, 9999)
 		userinfo = userinfo_controller.CreateUserinfo()
-		print (userinfo.nickname, userinfo.sex, userinfo.birthday, userinfo.signature)
 		activecode = 1111
 		account, created = Account.objects.get_or_create(username=username,
 			defaults = {'password' : password, 'activecode' : activecode, 'userinfo' : userinfo})
-		#print (created)
 		if (created):
 			self.SendEmail(username, activecode)
 		else:
@@ -213,12 +314,12 @@ class Account_Controller:
 		valid, data = FormValid(request, forms.RegisterForm)
 		if (valid == False):
 			return HttpResponse('Form format error.')
-
-		account, created = self.CreateAccount(data['username'], data['password'])
-		if (created):
-			return HttpResponse("We have sent an active-code to your PKU mail.")
-		else:
-			return HttpResponse('The username is existed.')
+		with transaction.atomic():
+			account, created = self.CreateAccount(data['username'], data['password'])
+			if (created):
+				return HttpResponse("We have sent an active-code to your PKU mail.")
+			else:
+				return HttpResponse('The username is existed.')
 
 	@csrf_exempt
 	@RSA_valid
@@ -226,13 +327,14 @@ class Account_Controller:
 		valid, data = FormValid(request, forms.ActiveForm)
 		if (valid == False):
 			return HttpResponse('Form format error.')
-		account = self.FindByUsernameAndPassword(data['username'], data['password'])
-		if account == None:
-			return HttpResponse('The username isn\'t existed, or wrong password.' )
-		elif account.Active(data['activecode']) == True:
-			return HttpResponse(account.userinfo.nickname)
-		else:
-			return HttpResponse('Wrong Activecode.')
+		with transaction.atomic():
+			account = self.FindByUsernameAndPassword(data['username'], data['password'])
+			if account == None:
+				return HttpResponse('The username isn\'t existed, or wrong password.' )
+			elif account.Active(data['activecode']) == True:
+				return HttpResponse(account.userinfo.nickname)
+			else:
+				return HttpResponse('Wrong Activecode.')
 
 	@csrf_exempt
 	@RSA_valid
@@ -240,15 +342,16 @@ class Account_Controller:
 		valid, data = FormValid(request, forms.LogInForm)
 		if (valid == False):
 			return HttpResponse('Form format error.')
-		account = self.FindByUsernameAndPassword(data['username'], data['password'])	
-		if account == None:
-			return HttpResponse('The username isn\'t existed, or wrong password.' )
-		elif account.active == False:
-			self.SendEmail(account.username, account.activecode)
-			return HttpResponse('Please active account first. We have sent the active code to your email.')
-		else:
-			request.session['username'] = account.username
-			return HttpResponse('Log in successfully.')
+		with transaction.atomic():
+			account = self.FindByUsernameAndPassword(data['username'], data['password'])	
+			if account == None:
+				return HttpResponse('The username isn\'t existed, or wrong password.' )
+			elif account.active == False:
+				self.SendEmail(account.username, account.activecode)
+				return HttpResponse('Please active account first. We have sent the active code to your email.')
+			else:
+				request.session['username'] = account.username
+				return HttpResponse('Log in successfully.')
 
 	@csrf_exempt
 	def LogOut(self, request):
@@ -261,12 +364,13 @@ class Account_Controller:
 		valid, data = FormValid(request, forms.ChangePasswordForm)
 		if (valid == False):
 			return HttpResponse('Form format error.')
-		account = self.FindByUsernameAndPassword(data['username'], data['password'])	
-		if account == None:
-			return HttpResponse('The username isn\'t existed, or wrong password.' )
-		else:
-			account.ChangePassword(data['newpassword'])
-			return HttpResponse('Change password successfully.')
-
+		with transaction.atomic():
+			account = self.FindByUsernameAndPassword(data['username'], data['password'])	
+			if account == None:
+				return HttpResponse('The username isn\'t existed, or wrong password.' )
+			else:
+				account.ChangePassword(data['newpassword'])
+				return HttpResponse('Change password successfully.')
 
 account_controller = Account_Controller()
+#----- End of Account Controller -----

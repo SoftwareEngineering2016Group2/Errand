@@ -33,6 +33,104 @@ def geturlopen(hosturl, postdata = {}, headers = HEADER):
     urlresponse = urllib2.urlopen(urlrequest)
     # return url
     return urlresponse
+
+
+def TestSelectTaskExecutor():
+    print(geturlopen('http://127.0.0.1:8000/Errand/').read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/register', \
+        {'username': '123', 'password' : '123'}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/active', \
+        {'username': '123', 'password' : '123', 'activecode' : '1111'}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/login', \
+        {'username': '123', 'password' : '123'}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/addtask', \
+        {'headline': 'qu kuai di', 'detail' : 'qkd', 'reward' : 'ji tui fan'}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/responsetask', \
+        {'pk' : 4}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/selecttaskexecutor', \
+        {'pk' : 4, 'username' : '123'}).read())
+def TestTaskSteps():
+    print(geturlopen('http://127.0.0.1:8000/Errand/').read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/register', \
+        {'username': '123', 'password' : '123'}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/active', \
+        {'username': '123', 'password' : '123', 'activecode' : '1111'}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/login', \
+        {'username': '123', 'password' : '123'}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/addtask', \
+        {'headline': 'qu kuai di', 'detail' : 'qkd', 'reward' : 'ji tui fan'}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/responsetask', \
+        {'pk' : 34}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/selecttaskexecutor', \
+        {'pk' : 34, 'username' : '123'}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/closetask', \
+        {'pk' : 34}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/commenttask', \
+        {'pk' : 34, 'comment' : 'Very Good', 'score' : 5}).read())
+def TestTaskAddChangeRemove():
+    print(geturlopen('http://127.0.0.1:8000/Errand/').read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/register', \
+        {'username': '123', 'password' : '123'}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/active', \
+        {'username': '123', 'password' : '123', 'activecode' : '1111'}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/login', \
+        {'username': '123', 'password' : '123'}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/addtask', \
+        {'headline': 'qu kuai di', 'detail' : 'qkd', 'reward' : 'ji tui fan'}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/changetask', \
+        {'pk' : 29, 'headline': 'dai fan', 'detail' : 'dai fan', 'reward' : '5 yuan'}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/removetask', \
+        {'pk' : 29}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/addtask', \
+        {'headline': 'qu kuai di', 'detail' : 'qkd', 'reward' : 'ji tui fan'}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/responsetask', \
+        {'pk' : 30}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/selecttaskexecutor', \
+        {'pk' : 30, 'username' : '123'}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/changetask', \
+        {'pk' : 30, 'headline': 'dai fan', 'detail' : 'dai fan', 'reward' : '5 yuan'}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/removetask', \
+        {'pk' : 30}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/closetask', \
+        {'pk' : 30}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/commenttask', \
+        {'pk' : 30, 'comment' : 'Very Good', 'score' : 5}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/changetask', \
+        {'pk' : 30, 'headline': 'dai fan', 'detail' : 'dai fan', 'reward' : '5 yuan'}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/removetask', \
+        {'pk' : 30}).read())
+
+def TestBrowseAllTask():
+    print(geturlopen('http://127.0.0.1:8000/Errand/').read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/register', \
+        {'username': '123', 'password' : '123'}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/active', \
+        {'username': '123', 'password' : '123', 'activecode' : '1111'}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/login', \
+        {'username': '123', 'password' : '123'}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/addtask', \
+        {'headline': 'qu kuai di', 'detail' : 'qkd', 'reward' : 'ji tui fan'}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/browsealltask', \
+        {'pk' : 100}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/addtask', \
+        {'headline': 'qu kuai di', 'detail' : 'qkd', 'reward' : 'ji tui fan'}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/addtask', \
+        {'headline': 'qu kuai di', 'detail' : 'qkd', 'reward' : 'ji tui fan'}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/addtask', \
+        {'headline': 'qu kuai di', 'detail' : 'qkd', 'reward' : 'ji tui fan'}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/addtask', \
+        {'headline': 'qu kuai di', 'detail' : 'qkd', 'reward' : 'ji tui fan'}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/addtask', \
+        {'headline': 'qu kuai di', 'detail' : 'qkd', 'reward' : 'ji tui fan'}).read())
+    print(geturlopen('http://127.0.0.1:8000/Errand/browsealltask', \
+        {'pk' : 100}).read())
+
+
+#TestSelectTaskExecutor()
+TestTaskSteps()
+#TestTaskAddChangeRemove()
+#TestBrowseAllTask()
+
 '''
 print(geturlopen('http://127.0.0.1:8000/Errand/').read())
 print(geturlopen('http://127.0.0.1:8000/Errand/register', \
@@ -50,11 +148,11 @@ print(geturlopen('http://127.0.0.1:8000/Errand/addtask', \
     {'headline': 'qu kuai di', 'detail' : 'qkd', 'reward' : 'ji tui fan'}).read())
 print(geturlopen('http://127.0.0.1:8000/Errand/addtaskaction', \
     {'pk': 12, 'start_time' : '2016-10-11 12:00:00', 'end_time' : '2016-10-11 13:00:00', 'place' : 'er jiao', 'action' : 'gei wo '}).read())
-'''
 
 
 
-'''
+
+
 print(geturlopen('http://127.0.0.1:8000/Errand/').read())
 print(geturlopen('http://127.0.0.1:8000/Errand/register', \
     {'username': '123', 'password' : '123'}).read())
@@ -67,10 +165,8 @@ print(geturlopen('http://127.0.0.1:8000/Errand/addtask', \
 print(geturlopen('http://127.0.0.1:8000/Errand/addtaskaction', \
     {'pk': 21, 'start_time' : '2016-10-11 12:00:00', 'end_time' : '2016-10-11 13:00:00', 'place' : 'er jiao', 'action' : 'gei wo '}).read())
 print(geturlopen('http://127.0.0.1:8000/Errand/logout').read())
-
 print(geturlopen('http://127.0.0.1:8000/Errand/addtask', \
     {'headline': 'qu kuai di', 'detail' : 'qkd', 'reward' : 'ji tui fan'}).read())
-
 print(geturlopen('http://127.0.0.1:8000/Errand/').read())
 print(geturlopen('http://127.0.0.1:8000/Errand/register', \
     {'username': '456', 'password' : '456'}).read())
@@ -78,11 +174,10 @@ print(geturlopen('http://127.0.0.1:8000/Errand/active', \
     {'username': '456', 'password' : '456', 'activecode' : '1111'}).read())
 print(geturlopen('http://127.0.0.1:8000/Errand/login', \
     {'username': '456', 'password' : '456'}).read())
-
 print(geturlopen('http://127.0.0.1:8000/Errand/addtaskaction', \
     {'pk': 21, 'start_time' : '2016-10-11 12:00:00', 'end_time' : '2016-10-11 13:00:00', 'place' : 'er jiao', 'action' : 'gei wo '}).read())
+print(geturlopen('http://127.0.0.1:8000/Errand/logout').read())
 
-print(geturlopen('http://127.0.0.1:8000/Errand/logout').read())'''
 
 
 print(geturlopen('http://127.0.0.1:8000/Errand/').read())
@@ -98,8 +193,30 @@ print(geturlopen('http://127.0.0.1:8000/Errand/addtaskaction', \
     {'pk': 38, 'start_time' : '2016-10-11 12:00:00', 'end_time' : '2016-10-11 13:00:00', 'place' : 'er jiao', 'action' : 'gei wo'}).read())
 print(geturlopen('http://127.0.0.1:8000/Errand/changetaskaction', \
     {'pk': 21, 'start_time' : '2016-10-11 13:00:00', 'end_time' : '2016-10-11 14:00:00', 'place' : 'yi jiao', 'action' : 'gei ni'}).read())
-
 print(geturlopen('http://127.0.0.1:8000/Errand/removetaskaction', \
     {'pk': 21}).read())
-
 print(geturlopen('http://127.0.0.1:8000/Errand/logout').read())
+
+
+
+
+print(geturlopen('http://127.0.0.1:8000/Errand/').read())
+print(geturlopen('http://127.0.0.1:8000/Errand/register', \
+    {'username': '123', 'password' : '123'}).read())
+print(geturlopen('http://127.0.0.1:8000/Errand/active', \
+    {'username': '123', 'password' : '123', 'activecode' : '1111'}).read())
+print(geturlopen('http://127.0.0.1:8000/Errand/login', \
+    {'username': '123', 'password' : '123'}).read())
+print(geturlopen('http://127.0.0.1:8000/Errand/addtask', \
+    {'headline': 'qu kuai di', 'detail' : 'qkd', 'reward' : 'ji tui fan'}).read())
+print(geturlopen('http://127.0.0.1:8000/Errand/addtaskaction', \
+    {'pk': 33, 'start_time' : '2016-10-11 12:00:00', 'end_time' : '2016-10-11 13:00:00', 'place' : 'er jiao', 'action' : 'gei wo'}).read())
+print(geturlopen('http://127.0.0.1:8000/Errand/addtaskaction', \
+    {'pk': 33, 'start_time' : '2016-10-11 12:00:00', 'end_time' : '2016-10-11 13:00:00', 'place' : 'er jiao', 'action' : 'gei wo'}).read())
+print(geturlopen('http://127.0.0.1:8000/Errand/responsetask', \
+    {'pk' : 33}).read())
+print(geturlopen('http://127.0.0.1:8000/Errand/changetaskaction', \
+    {'pk': 27, 'start_time' : '2016-10-11 13:00:00', 'end_time' : '2016-10-11 14:00:00', 'place' : 'yi jiao', 'action' : 'gei ni'}).read())
+print(geturlopen('http://127.0.0.1:8000/Errand/removetaskaction', \
+    {'pk': 27}).read())'''
+
