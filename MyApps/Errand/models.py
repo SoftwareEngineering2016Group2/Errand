@@ -4,13 +4,8 @@ from __future__ import unicode_literals
 from django.db import models
 from django.utils import timezone
 import datetime
-#from bson import json_util
 import json
-def default(o):
-	if type(o) is datetime.date or type(o) is datetime.datetime:
-		return o.isoformat()
-	#if type(o) is decimal.Decimal:
-		#return float(o)
+
 
 
 class Account(models.Model):
@@ -92,7 +87,7 @@ class Task(models.Model):
 	def CanSelect(self, username):
 		return self.IsCreator(username) and self.InWaiting()
 	def CanClose(self, username):
-		return self.IsCreator(username) and self.InAccpted()
+		return self.IsCreator(username) and (self.InAccpted() or self.InClosed())
 	def CanComment(self, username):
 		return self.IsCreator(username) and self.InClosed()
 	def ChangeTask(self, data):

@@ -54,7 +54,7 @@ class Task_Controller:
 	def AddTask(self, request):
 		valid, data = FormValid(request, forms.AddTaskForm)
 		if (valid == False):
-			return HttpResponse('Form format error.')
+			return HttpResponse('FAILED : Form format error.')
 		task = self.CreateTask(account_controller.FindByUsername(request.session['username']), data)
 		return HttpResponse(serializers.serialize("json", [task]))
 
@@ -63,13 +63,13 @@ class Task_Controller:
 	def ChangeTask(self, request):
 		valid, data = FormValid(request, forms.ChangeTaskForm)
 		if (valid == False):
-			return HttpResponse('Form format error.')
+			return HttpResponse('FAILED : Form format error.')
 		with transaction.atomic():
 			task = self.FindTask(data['pk'])	
 			if (task == None):
-				return HttpResponse('The task isn\'t existed.' )
+				return HttpResponse('FAILED : The task isn\'t existed.' )
 			if (task.CanChange(request.session.get('username', None)) == False):
-				return HttpResponse("Failed")
+				return HttpResponse('FAILED : You can\'t change the task.')
 			task.ChangeTask(data)
 			return HttpResponse(serializers.serialize("json", [task]))
 	
@@ -78,15 +78,15 @@ class Task_Controller:
 	def RemoveTask(self, request):
 		valid, data = FormValid(request, forms.RemoveTaskForm)
 		if (valid == False):
-			return HttpResponse('Form format error.')
+			return HttpResponse('FAILED : Form format error.')
 		with transaction.atomic():
 			task = self.FindTask(data['pk'])	
 			if (task == None):
-				return HttpResponse('The task isn\'t existed.' )
+				return HttpResponse('FAILED : The task isn\'t existed.' )
 			if (task.CanChange(request.session.get('username', None)) == False):
-				return HttpResponse("Failed")
+				return HttpResponse('FAILED : You can\'t remove the task.')
 			task.delete()
-			return HttpResponse('The task has been removed.')
+			return HttpResponse('OK')
 
 	def FindTaskAction(self, pk):
 		try:
@@ -104,126 +104,126 @@ class Task_Controller:
 	def AddTaskAction(self, request):
 		valid, data = FormValid(request, forms.AddTaskActionForm)
 		if (valid == False):
-			return HttpResponse('Form format error.')
+			return HttpResponse('FAILED : Form format error.')
 		with transaction.atomic():
 			task = self.FindTask(data['pk'])	
 			if (task == None):
-				return HttpResponse('The task isn\'t existed.')
+				return HttpResponse('FAILED : The task isn\'t existed.')
 			if (task.CanChange(request.session.get('username', None)) == False):
-				return HttpResponse("Failed")
+				return HttpResponse('FAILED : You can\'t change the task.')
 			if (task.task_actions.count() > 5):
-				return HttpResponse("The task have too many Actions.")
+				return HttpResponse("FAILED : The task have too many actions.")
 			taskAction = self.CreateTaskAction(task, data)
-			return HttpResponse(serializers.serialize("json", task.task_actions.all()))
+			return HttpResponse(serializers.serialize("json", [taskAction]))
 
 	@csrf_exempt
 	@Logged_in
 	def ChangeTaskAction(self, request):
 		valid, data = FormValid(request, forms.ChangeTaskActionForm)
 		if (valid == False):
-			return HttpResponse('Form format error.')
+			return HttpResponse('FAILED : Form format error.')
 		with transaction.atomic():
 			taskAction = self.FindTaskAction(data['pk'])	
 			if (taskAction == None):
-				return HttpResponse('The task action isn\'t existed.' )
+				return HttpResponse('FAILED : The task action isn\'t existed.')
 			task = taskAction.task_belong;
 			if (task.CanChange(request.session.get('username', None)) == False):
-				return HttpResponse("Failed")
+				return HttpResponse('FAILED : You can\'t change the task action.')
 			taskAction.ChangeTaskAction(data)
-			return HttpResponse(serializers.serialize("json", task.task_actions.all()))
+			return HttpResponse(serializers.serialize("json", [taskAction]))
 		
 	@csrf_exempt
 	@Logged_in
 	def RemoveTaskAction(self, request):
 		valid, data = FormValid(request, forms.RemoveTaskActionForm)
 		if (valid == False):
-			return HttpResponse('Form format error.')
+			return HttpResponse('FAILED : Form format error.')
 		with transaction.atomic():
 			taskAction = self.FindTaskAction(data['pk'])	
 			if (taskAction == None):
-				return HttpResponse('The task action isn\'t existed.' )
+				return HttpResponse('FAILED : The task action isn\'t existed.')
 			task = taskAction.task_belong;
 			if (task.CanChange(request.session.get('username', None)) == False):
-				return HttpResponse("Failed")
+				return HttpResponse('FAILED : You can\'t remove the task action.')
 			taskAction.delete()
-			return HttpResponse(serializers.serialize("json", task.task_actions.all()))
+			return HttpResponse('OK')
 
 	@csrf_exempt
 	@Logged_in
 	def ResponseTask(self, request):
 		valid, data = FormValid(request, forms.ResponseTaskForm)
 		if (valid == False):
-			return HttpResponse('Form format error.')
+			return HttpResponse('FAILED : Form format error.')
 		with transaction.atomic():
 			task = self.FindTask(data['pk'])
 			account = account_controller.FindByUsername(request.session['username'])
 			if (task == None):
-				return HttpResponse('The task isn\'t existed.')
+				return HttpResponse('FAILED : The task isn\'t existed.' )
 			if (task.InWaiting() == False):
-				return HttpResponse("The Task is not in waiting status.")
+				return HttpResponse('FAILED : You can\'t response the task.')
 			task.response_accounts.add(account)
-			return HttpResponse(serializers.serialize("json", account.response_tasks.all()))
+			return HttpResponse('OK')
 
 	@csrf_exempt
 	@Logged_in
 	def SelectTaskExecutor(self, request):
 		valid, data = FormValid(request, forms.SelectTaskExecutorForm)
 		if (valid == False):
-			return HttpResponse('Form format error.')
+			return HttpResponse('FAILED : Form format error.')
 		with transaction.atomic():
 			task = self.FindTask(data['pk'])
 			if (task == None):
-				return HttpResponse('The task isn\'t existed.')
+				return HttpResponse('FAILED : The task isn\'t existed.' )
 			account = account_controller.FindByUsername(data['username'])
 			if account == None:
-				return HttpResponse('The username isn\'t existed')
+				return HttpResponse('FAILED : The username isn\'t existed')
 			if (task.CanSelect(request.session.get('username', None)) == False):
-				return HttpResponse("Failed")
+				return HttpResponse('FAILED : You can\'t select executor for the task.')
 			try:
 				response_account = task.response_accounts.get(username=data['username'])
 			except Account.DoesNotExist:
 				response_account = None
 			if (response_account == None):
-				return HttpResponse("The user did\'t response the task.")
+				return HttpResponse('FAILED : The user did\'t response the task.')
 			task.Accept(response_account)
-			return HttpResponse(serializers.serialize("json", [task]))
+			return HttpResponse('OK')
 
 	@csrf_exempt
 	@Logged_in
 	def CloseTask(self, request):
 		valid, data = FormValid(request, forms.CloseTaskForm)
 		if (valid == False):
-			return HttpResponse('Form format error.')
+			return HttpResponse('FAILED : Form format error.')
 		with transaction.atomic():
 			task = self.FindTask(data['pk'])
 			if (task == None):
-				return HttpResponse('The task isn\'t existed.')
+				return HttpResponse('FAILED : The task isn\'t existed.')
 			if (task.CanClose(request.session.get('username', None)) == False):
-				return HttpResponse("Failed")
+				return HttpResponse('FAILED : You can\'t close the task.')
 			task.Close()
-			return HttpResponse(serializers.serialize("json", [task]))
+			return HttpResponse('OK')
 	
 	@csrf_exempt
 	@Logged_in
 	def CommentTask(self, request):
 		valid, data = FormValid(request, forms.CommentTaskForm)
 		if (valid == False):
-			return HttpResponse('Form format error.')
+			return HttpResponse('FAILED : Form format error.')
 		with transaction.atomic():
 			task = self.FindTask(data['pk'])
 			if (task == None):
-				return HttpResponse('The task isn\'t existed.')
+				return HttpResponse('FAILED : The task isn\'t existed.')
 			if (task.CanComment(request.session.get('username', None)) == False):
-				return HttpResponse("Failed")
+				return HttpResponse('FAILED : You can\'t comment the task.')
 			task.Comment(data)
-			return HttpResponse(serializers.serialize("json", [task]))
+			return HttpResponse('OK')
 
 	@csrf_exempt
 	@Logged_in
 	def BrowseAllTask(self, request):
 		valid, data = FormValid(request, forms.BrowseAllTaskForm)
 		if (valid == False):
-			return HttpResponse('Form format error.')
+			return HttpResponse('FAILED : Form format error.')
 		with transaction.atomic():
 			tasks = Task.objects.filter(status='W', pk__lt=data['pk']).order_by('-pk')
 			if (tasks.count() < 5):
@@ -253,11 +253,11 @@ class Userinfo_Controller:
 	def ChangeUserinfo(self, request):
 		valid, data = FormValid(request, forms.UserinfoForm)
 		if (valid == False):
-			return HttpResponse('Form format error.')
+			return HttpResponse('FAILED : Form format error.')
 		with transaction.atomic():
 			userinfo = account_controller.FindByUsername(request.session['username']).userinfo
 			userinfo.ChangeUserinfo(data)
-			return HttpResponse('Change Userinfo successfully.')
+			return HttpResponse('OK')
 
 userinfo_controller = Userinfo_Controller()
 #----- End of Userinfo Controller -----
@@ -313,64 +313,64 @@ class Account_Controller:
 	def Register(self, request):
 		valid, data = FormValid(request, forms.RegisterForm)
 		if (valid == False):
-			return HttpResponse('Form format error.')
+			return HttpResponse('FAILED : Form format error.')
 		with transaction.atomic():
 			account, created = self.CreateAccount(data['username'], data['password'])
 			if (created):
-				return HttpResponse("We have sent an active-code to your PKU mail.")
+				return HttpResponse('OK')
 			else:
-				return HttpResponse('The username is existed.')
+				return HttpResponse('FAILED : The username is existed.')
 
 	@csrf_exempt
 	@RSA_valid
 	def Active(self, request):
 		valid, data = FormValid(request, forms.ActiveForm)
 		if (valid == False):
-			return HttpResponse('Form format error.')
+			return HttpResponse('FAILED : Form format error.')
 		with transaction.atomic():
 			account = self.FindByUsernameAndPassword(data['username'], data['password'])
 			if account == None:
-				return HttpResponse('The username isn\'t existed, or wrong password.' )
+				return HttpResponse('FAILED : The username isn\'t existed, or wrong password.')
 			elif account.Active(data['activecode']) == True:
-				return HttpResponse(account.userinfo.nickname)
+				return HttpResponse('OK')
 			else:
-				return HttpResponse('Wrong Activecode.')
+				return HttpResponse('FAILED : Wrong Active Code')
 
 	@csrf_exempt
 	@RSA_valid
 	def LogIn(self, request):
 		valid, data = FormValid(request, forms.LogInForm)
 		if (valid == False):
-			return HttpResponse('Form format error.')
+			return HttpResponse('FAILED : Form format error.')
 		with transaction.atomic():
 			account = self.FindByUsernameAndPassword(data['username'], data['password'])	
 			if account == None:
-				return HttpResponse('The username isn\'t existed, or wrong password.' )
+				return HttpResponse('FAILED : The username isn\'t existed, or wrong password.')
 			elif account.active == False:
 				self.SendEmail(account.username, account.activecode)
-				return HttpResponse('Please active account first. We have sent the active code to your email.')
+				return HttpResponse('FAILED : Please active account first.')
 			else:
 				request.session['username'] = account.username
-				return HttpResponse('Log in successfully.')
+				return HttpResponse('OK')
 
 	@csrf_exempt
 	def LogOut(self, request):
 		request.session['username'] = None
-		return HttpResponse('Log out successfully.')
+		return HttpResponse('OK')
 
 	@csrf_exempt
 	@RSA_valid
 	def ChangePassword(self, request):
 		valid, data = FormValid(request, forms.ChangePasswordForm)
 		if (valid == False):
-			return HttpResponse('Form format error.')
+			return HttpResponse('FAILED : Form format error.')
 		with transaction.atomic():
 			account = self.FindByUsernameAndPassword(data['username'], data['password'])	
 			if account == None:
-				return HttpResponse('The username isn\'t existed, or wrong password.' )
+				return HttpResponse('FAILED : The username isn\'t existed, or wrong password.')
 			else:
 				account.ChangePassword(data['newpassword'])
-				return HttpResponse('Change password successfully.')
+				return HttpResponse('OK')
 
 account_controller = Account_Controller()
 #----- End of Account Controller -----
