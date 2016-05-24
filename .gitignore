@@ -1,0 +1,4 @@
+*.pyc
+./MyApps/Errand/__pycache__
+./MyApps/MyApps/__pycache__
+./MyApps/Errand/migrations/__pycache__
