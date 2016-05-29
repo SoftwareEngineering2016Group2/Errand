@@ -22,7 +22,7 @@ HEADER = {
 }
 
 url = 'http://127.0.0.1:8000/Errand/'
-
+#url = 'http://139.129.47.180:8002/Errand/'
 def geturlopen(hosturl, postdata = {}, headers = HEADER):
 	enpostdata = urllib.parse.urlencode(postdata).encode('utf-8') 
 	urlrequest = urllib.request.Request(hosturl, enpostdata, headers)
@@ -34,9 +34,9 @@ def getData(uri, data = {}):
 
 
 account = [
-{'username': '123', 'password' : '123'},
-{'username': '456', 'password' : '456'},
-{'username': '789', 'password' : '789'}
+{'username': '1230000000', 'password' : '123'},
+{'username': '4560000000', 'password' : '456'},
+{'username': '7890000000', 'password' : '789'}
 ]
 userinfo = [
 {'nickname':'Sun', 'sex' :'M', 'phone_number':'13888888888', 'birthday':'1994-10-11', 'signature':'Sleeping..'},

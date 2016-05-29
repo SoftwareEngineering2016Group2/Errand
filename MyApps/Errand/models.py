@@ -9,7 +9,7 @@ import json
 
 
 class Account(models.Model):
-	username = models.CharField(max_length=16, primary_key=True)
+	username = models.CharField(max_length=10, primary_key=True)
 	password = models.CharField(max_length=16)
 	activecode = models.CharField(max_length=4)
 	active = models.BooleanField(default=False)
@@ -39,7 +39,7 @@ class Userinfo(models.Model):
 	sex = models.CharField(max_length=1, choices=SEX_CHOICES, default=MALE)
 	phone_number = models.CharField(max_length=11, default="13000000000")
 	birthday = models.DateField(default='1900-1-1')
-	signature = models.CharField(max_length=140, blank=True, default="")
+	signature = models.CharField(max_length=128, blank=True, default="")
 
 	def ChangeUserinfo(self, data):
 		self.nickname = data['nickname']
