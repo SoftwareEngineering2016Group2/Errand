@@ -103,3 +103,6 @@ class CommentTaskForm(forms.Form):
 
 class BrowseAllTaskForm(forms.Form):
 	pk = forms.CharField(max_length=16, label="Task ID")
+	
+class GetTaskActionsForm(forms.Form):
+	pk = forms.CharField(max_length=16, label="Task ID")

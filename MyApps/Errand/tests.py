@@ -163,7 +163,7 @@ class ViewsTestCase(TestCase):
 		self.assertEqual(getData('closetask', {'pk':'-1'}), 'FAILED : The task isn\'t existed.')		
 		self.assertEqual(getData('closetask', {'pk':'-1'}), 'FAILED : The task isn\'t existed.')		
 		self.assertEqual(getData('commenttask', {'pk':'-1', 'score':5, 'comment':'Very Good'}), 'FAILED : The task isn\'t existed.')		
-	def Browse():
+	def Browse(self):
 		self.assertEqual(getData('login', account[0]), 'OK')
 		mytask = simplejson.loads(getData('addtask', task[0]))[0]
 		self.assertEqual(mytask['fields']['headline'], task[0]['headline'])
@@ -174,8 +174,15 @@ class ViewsTestCase(TestCase):
 		self.assertEqual(getData('responsetask', {'pk':mytask['pk']}), 'OK')
 		self.assertEqual(getData('login', account[1]), 'OK')
 		self.assertEqual(getData('responsetask', {'pk':mytask['pk']}), 'OK')
-		print (getData('browsealltask', {'pk':'9999999'}))
+		tasks = getData('browsealltask', {'pk':'9999999'})
+		mytask = simplejson.loads(tasks)[0]
+		self.assertEqual(mytask['fields']['headline'], task[0]['headline'])
+		taskactions = getData('gettaskactions', {'pk':mytask['pk']})
+		mytaskaction = simplejson.loads(taskactions)[0]
+		print (taskactions)
+		self.assertEqual(mytaskaction['fields']['place'], taskAction[0]['place'])
 		
+		 
 	def TaskPermission(self):
 		pass
 		

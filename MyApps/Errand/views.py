@@ -230,6 +230,18 @@ class Task_Controller:
 				num = tasks.count()
 			else: num = 5
 			return HttpResponse(serializers.serialize("json", tasks[0:num]))
+	
+	@csrf_exempt
+	@Logged_in
+	def GetTaskActions(self, request):
+		valid, data = FormValid(request, forms.GetTaskActionsForm)
+		if (valid == False):
+			return HttpResponse('FAILED : Form format error.')
+		with transaction.atomic():
+			task = self.FindTask(data['pk'])
+			if (task == None):
+				return HttpResponse('FAILED : The task isn\'t existed.')
+			return HttpResponse(serializers.serialize("json", task.task_actions.all()))
 
 task_controller = Task_Controller();
 #----- End of Task Controller -----
