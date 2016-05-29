@@ -34,8 +34,8 @@ def getData(uri, data = {}):
 
 
 account = [
-{'username': '1230000000', 'password' : '123'},
-{'username': '4560000000', 'password' : '456'},
+{'username': '1234567890', 'password' : '123'},
+{'username': '0987654321', 'password' : '456'},
 {'username': '7890000000', 'password' : '789'}
 ]
 userinfo = [
@@ -163,7 +163,19 @@ class ViewsTestCase(TestCase):
 		self.assertEqual(getData('closetask', {'pk':'-1'}), 'FAILED : The task isn\'t existed.')		
 		self.assertEqual(getData('closetask', {'pk':'-1'}), 'FAILED : The task isn\'t existed.')		
 		self.assertEqual(getData('commenttask', {'pk':'-1', 'score':5, 'comment':'Very Good'}), 'FAILED : The task isn\'t existed.')		
-	
+	def Browse():
+		self.assertEqual(getData('login', account[0]), 'OK')
+		mytask = simplejson.loads(getData('addtask', task[0]))[0]
+		self.assertEqual(mytask['fields']['headline'], task[0]['headline'])
+		mytaskaction = simplejson.loads(getData('addtaskaction', dict(taskAction[0], **{'pk':mytask['pk']})))[0]
+		self.assertEqual(mytaskaction['fields']['place'], taskAction[0]['place'])
+		mytaskaction = simplejson.loads(getData('addtaskaction', dict(taskAction[1], **{'pk':mytask['pk']})))[0]
+		self.assertEqual(mytaskaction['fields']['place'], taskAction[1]['place'])
+		self.assertEqual(getData('responsetask', {'pk':mytask['pk']}), 'OK')
+		self.assertEqual(getData('login', account[1]), 'OK')
+		self.assertEqual(getData('responsetask', {'pk':mytask['pk']}), 'OK')
+		print (getData('browsealltask', {'pk':'9999999'}))
+		
 	def TaskPermission(self):
 		pass
 		
@@ -179,3 +191,5 @@ class ViewsTestCase(TestCase):
 		self.TaskSteps()
 		self.TaskIsNotExist()
 		self.TaskPermission()
+		self.Browse()
+		
