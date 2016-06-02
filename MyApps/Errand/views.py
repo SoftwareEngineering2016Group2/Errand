@@ -243,14 +243,6 @@ class Task_Controller:
 				return HttpResponse('FAILED : The task isn\'t existed.')
 			return HttpResponse(serializers.serialize("json", task.task_actions.all()))
 
-	@csrf_exempt
-	def CloseTasks(self, request):
-		with transaction.atomic():
-			tasks = Task.objects.select_for_update().exclude(task_actions__end_time__gt=timezone.localtime(timezone.now())).exclude(status='C')
-			for task in tasks:
-				task.Close()
-			return HttpResponse(serializers.serialize("json", tasks))
-
 task_controller = Task_Controller();
 #----- End of Task Controller -----
 

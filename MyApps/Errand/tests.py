@@ -206,14 +206,6 @@ class ViewsTestCase(TestCase):
 		tasks = simplejson.loads(getData('browsealltask', {'pk':'9999999'}))
 		self.assertEqual(len(tasks), 5)
 
-		'''tasks = simplejson.loads(getData('closetasks'))
-		self.assertEqual(len(tasks), 1)
-		self.assertEqual(tasks[0]['fields']['headline'], 'dai fan')
-
-		tasks = simplejson.loads(getData('browsealltask', {'pk':'9999999'}))
-		self.assertEqual(len(tasks), 2)
-		'''
-
 	def TaskPermission(self):
 		pass
 		
@@ -230,7 +222,3 @@ class ViewsTestCase(TestCase):
 		self.TaskIsNotExist()
 		self.TaskPermission()
 		self.Browse()
-		
-		self.CloseTasks()
-		#tasks = simplejson.loads(getData('browsealltask', {'pk':'9999999'}))
-		#self.assertEqual(len(tasks), 2)
