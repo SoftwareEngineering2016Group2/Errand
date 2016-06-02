@@ -1,6 +1,3 @@
-
-
-
 #!/usr/bin/python
 # -*-coding:UTF-8 -*-
 from django.test import TestCase
@@ -47,7 +44,7 @@ task = [
 {'headline':'dai fan', 'detail':'bang wo dai fan', 'reward':'5 yuan'}
 ]
 taskAction = [
-{'start_time' : '2016-10-11 12:00:00', 'end_time' : '2016-10-11 13:00:00', 'place' : 'er jiao', 'action' : 'gei wo'},
+{'start_time' : '2011-10-11 12:00:00', 'end_time' : '2011-10-11 13:00:00', 'place' : 'er jiao', 'action' : 'gei wo'},
 {'start_time' : '2016-10-11 13:00:00', 'end_time' : '2016-10-11 14:00:00', 'place' : 'yi jiao', 'action' : 'gei ni'},
 ]
 
@@ -60,6 +57,7 @@ class ViewsTestCase(TestCase):
 		self.assertEqual(getData('register', account[1]), 'FAILED : The username is existed.')
 	
 	def Active(self):
+		RSA = getData('')
 		self.assertEqual(getData('active', dict(account[0], **{'activecode':'1111'})), 'OK')
 		self.assertEqual(getData('active', dict(account[1], **{'activecode':'2222'})), 'FAILED : Wrong Active Code')
 		self.assertEqual(getData('active', dict(account[2], **{'activecode':'1111'})), 'FAILED : The username isn\'t existed, or wrong password.')
@@ -67,6 +65,7 @@ class ViewsTestCase(TestCase):
 		#self.assertEqual(getData('active', dict(account[1], **{'activecode':'1111'})), 'OK')
 	
 	def LogIn(self):
+		RSA = getData('')
 		self.assertEqual(getData('login', account[0]), 'OK')
 		self.assertEqual(getData('login', account[1]), 'FAILED : Please active account first.')
 		self.assertEqual(getData('login', account[2]), 'FAILED : The username isn\'t existed, or wrong password.')
@@ -182,7 +181,39 @@ class ViewsTestCase(TestCase):
 		print (taskactions)
 		self.assertEqual(mytaskaction['fields']['place'], taskAction[0]['place'])
 		
-		 
+	def CloseTasks(self):
+		self.assertEqual(getData('login', account[0]), 'OK')
+		mytask = simplejson.loads(getData('addtask', task[0]))[0]
+		self.assertEqual(mytask['fields']['headline'], task[0]['headline'])
+		mytaskaction = simplejson.loads(getData('addtaskaction', dict(taskAction[0], **{'pk':mytask['pk']})))[0]
+		self.assertEqual(mytaskaction['fields']['place'], taskAction[0]['place'])
+		mytaskaction = simplejson.loads(getData('addtaskaction', dict(taskAction[1], **{'pk':mytask['pk']})))[0]
+		self.assertEqual(mytaskaction['fields']['place'], taskAction[1]['place'])
+		
+		mytask = simplejson.loads(getData('addtask', task[0]))[0]
+		self.assertEqual(mytask['fields']['headline'], task[0]['headline'])
+		mytaskaction = simplejson.loads(getData('addtaskaction', dict(taskAction[0], **{'pk':mytask['pk']})))[0]
+		self.assertEqual(mytaskaction['fields']['place'], taskAction[0]['place'])
+		mytaskaction = simplejson.loads(getData('addtaskaction', dict(taskAction[1], **{'pk':mytask['pk']})))[0]
+		self.assertEqual(mytaskaction['fields']['place'], taskAction[1]['place'])
+		
+
+		mytask = simplejson.loads(getData('addtask', task[1]))[0]
+		self.assertEqual(mytask['fields']['headline'], task[1]['headline'])
+		mytaskaction = simplejson.loads(getData('addtaskaction', dict(taskAction[0], **{'pk':mytask['pk']})))[0]
+		self.assertEqual(mytaskaction['fields']['place'], taskAction[0]['place'])
+		
+		tasks = simplejson.loads(getData('browsealltask', {'pk':'9999999'}))
+		self.assertEqual(len(tasks), 5)
+
+		'''tasks = simplejson.loads(getData('closetasks'))
+		self.assertEqual(len(tasks), 1)
+		self.assertEqual(tasks[0]['fields']['headline'], 'dai fan')
+
+		tasks = simplejson.loads(getData('browsealltask', {'pk':'9999999'}))
+		self.assertEqual(len(tasks), 2)
+		'''
+
 	def TaskPermission(self):
 		pass
 		
@@ -200,3 +231,6 @@ class ViewsTestCase(TestCase):
 		self.TaskPermission()
 		self.Browse()
 		
+		self.CloseTasks()
+		#tasks = simplejson.loads(getData('browsealltask', {'pk':'9999999'}))
+		#self.assertEqual(len(tasks), 2)
