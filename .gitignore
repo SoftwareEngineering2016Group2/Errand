@@ -1,4 +1,8 @@
 *.pyc
-./MyApps/Errand/__pycache__
-./MyApps/MyApps/__pycache__
-./MyApps/Errand/migrations/__pycache__
+!*.py
+/MyApps/Errand/__pycache__/
+/MyApps/MyApps/__pycache__/
+!/MyApps/Errand/migrations/__init__.py
+/MyApps/Errand/migrations/
+
+/MyApps/db.sqlite3
