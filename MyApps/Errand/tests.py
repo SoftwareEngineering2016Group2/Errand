@@ -22,7 +22,7 @@ HEADER = {
 }
 
 url = 'http://127.0.0.1:8000/Errand/'
-
+#send postdata and return response
 def geturlopen(hosturl, postdata = {}, headers = HEADER):
 	enpostdata = urllib.parse.urlencode(postdata).encode('utf-8') 
 	urlrequest = urllib.request.Request(hosturl, enpostdata, headers)
@@ -58,14 +58,15 @@ class ViewsTestCase(TestCase):
 		self.assertEqual(getData('register', account[0]), 'FAILED : The username is existed.')
 		self.assertEqual(getData('register', account[1]), 'OK')
 		self.assertEqual(getData('register', account[1]), 'FAILED : The username is existed.')
-	
+	#only account 0 is activated
 	def Active(self):
 		self.assertEqual(getData('active', dict(account[0], **{'activecode':'1111'})), 'OK')
 		self.assertEqual(getData('active', dict(account[1], **{'activecode':'2222'})), 'FAILED : Wrong Active Code')
 		self.assertEqual(getData('active', dict(account[2], **{'activecode':'1111'})), 'FAILED : The username isn\'t existed, or wrong password.')
+		#some double active issues here, but it seems alright
 		self.assertEqual(getData('active', dict(account[0], **{'activecode':'1111'})), 'OK')
 		#self.assertEqual(getData('active', dict(account[1], **{'activecode':'1111'})), 'OK')
-	
+	#account 0 login
 	def LogIn(self):
 		self.assertEqual(getData('login', account[0]), 'OK')
 		self.assertEqual(getData('login', account[1]), 'FAILED : Please active account first.')
@@ -95,6 +96,8 @@ class ViewsTestCase(TestCase):
 	def TaskSteps(self):
 		self.assertEqual(getData('login', account[0]), 'OK')
 		mytask = simplejson.loads(getData('addtask', task[0]))[0]
+		##test
+		
 		self.assertEqual(mytask['fields']['headline'], task[0]['headline'])
 		mytask = simplejson.loads(getData('changetask', dict(task[1], **{'pk':mytask['pk']})))[0]
 		self.assertEqual(mytask['fields']['headline'], task[1]['headline'])

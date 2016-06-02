@@ -55,7 +55,11 @@ class Task_Controller:
 		valid, data = FormValid(request, forms.AddTaskForm)
 		if (valid == False):
 			return HttpResponse('FAILED : Form format error.')
-		task = self.CreateTask(account_controller.FindByUsername(request.session['username']), data)
+		account = account_controller.FindByUsername(request.session['username'])
+		#update the taskCreated
+		with transaction.atomic():
+			account.taskRelated.updateTaskCreated()
+		task = self.CreateTask(account, data)
 		return HttpResponse(serializers.serialize("json", [task]))
 
 	@csrf_exempt
@@ -85,6 +89,12 @@ class Task_Controller:
 				return HttpResponse('FAILED : The task isn\'t existed.' )
 			if (task.CanChange(request.session.get('username', None)) == False):
 				return HttpResponse('FAILED : You can\'t remove the task.')
+			#update the taskCreated and the taskCompleted and scores
+			with transaction.atomic():
+				task.create_account.taskRelated.updateTaskCreated(-1)
+				if task.execute_account is not None:
+					task.execute_account.userinfo.updateTaskCompleted(-1)
+					task.execute_account.userinfo.updateScores(-task.scores)
 			task.delete()
 			return HttpResponse('OK')
 
@@ -201,6 +211,7 @@ class Task_Controller:
 			if (task.CanClose(request.session.get('username', None)) == False):
 				return HttpResponse('FAILED : You can\'t close the task.')
 			task.Close()
+			task.execute_account.updateTaskCompleted()
 			return HttpResponse('OK')
 	
 	@csrf_exempt
@@ -216,6 +227,7 @@ class Task_Controller:
 			if (task.CanComment(request.session.get('username', None)) == False):
 				return HttpResponse('FAILED : You can\'t comment the task.')
 			task.Comment(data)
+			task.execute_account.userinfo.updateScores(data['scores'])
 			return HttpResponse('OK')
 
 	@csrf_exempt
@@ -226,7 +238,7 @@ class Task_Controller:
 			return HttpResponse('FAILED : Form format error.')
 		with transaction.atomic():
 			tasks = Task.objects.filter(status='W', pk__lt=data['pk']).order_by('-pk')
-			if (tasks.count() < 5):
+			if (tasks.counatomict() < 5):
 				num = tasks.count()
 			else: num = 5
 			return HttpResponse(serializers.serialize("json", tasks[0:num]))
@@ -257,7 +269,19 @@ class Userinfo_Controller:
 		with transaction.atomic():
 			userinfo = account_controller.FindByUsername(request.session['username']).userinfo
 			userinfo.ChangeUserinfo(data)
-			return HttpResponse('OK')
+			return HttpResponse('OK')	
+
+	@csrf_exempt	
+	def ChangeAvatar(self, request):
+		if request.method == 'POST':
+			form = forms.AvatarUploadForm(request.POST,request.FILES)
+			if form.is_valid():
+				userinfo = account_controller.FindByUsername(request.session['username']).userinfo
+				userinfo.ChangeAvatar(form.cleaned_data['image'])
+				return HttpResponse('image upload success')
+			else:
+				return HttpResponse('Form format error!')
+		return HttpResponse('allowed only via POST')
 
 userinfo_controller = Userinfo_Controller()
 #----- End of Userinfo Controller -----
@@ -357,7 +381,7 @@ class Account_Controller:
 	def LogOut(self, request):
 		request.session['username'] = None
 		return HttpResponse('OK')
-
+	#to change the password, login is not required
 	@csrf_exempt
 	@RSA_valid
 	def ChangePassword(self, request):

@@ -26,6 +26,9 @@ class UserinfoForm(forms.Form):
 	birthday = forms.DateField(label='birthday')
 	signature = forms.CharField(max_length=140, label="signature")
 
+class AvatarUploadForm(forms.Form):
+	avatar = forms.ImageField()
+	
 class AddTaskForm(forms.Form):
 	headline = forms.CharField(max_length=16, label='Headline')
 	detail = forms.CharField(max_length=128, label='Detail')

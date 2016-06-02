@@ -14,6 +14,7 @@ class Account(models.Model):
 	activecode = models.CharField(max_length=4)
 	active = models.BooleanField(default=False)
 	userinfo = models.OneToOneField('Userinfo', related_name='account')
+	taskRelated = models.OneToOneField('TaskRelated',related_name='account')
 	def Active(self, num):
 		if num == self.activecode:
 			self.active = True
@@ -40,6 +41,8 @@ class Userinfo(models.Model):
 	phone_number = models.CharField(max_length=11, default="13000000000")
 	birthday = models.DateField(default='1900-1-1')
 	signature = models.CharField(max_length=140, blank=True, default="")
+	#avatar = models.ImageField(upload_to='avatar/',default='default.jpg')
+
 
 	def ChangeUserinfo(self, data):
 		self.nickname = data['nickname']
@@ -50,10 +53,38 @@ class Userinfo(models.Model):
 		self.save()
 		return True
 
+	def ChangeAvatar(self, avatar):
+		if self.avatar.name != 'defaul.jpg':
+			self.avatar.delete(False)
+		self.avatar = avatar
+		self.save()
+		return True
+
+
+
 	def __unicode__(self):
 		return self.nickname
-	
 
+class TaskRelated(models.Model):
+	taskCompleted = models.PositiveIntegerField(default=0)
+	taskCreated = models.PositiveIntegerField(default=0)
+	scores = models.IntegerField(default=0)
+
+	def updateTaskCompleted(self, add=1):
+		self.taskCompleted += add
+		self.save()
+		return True
+
+	def updateTaskCreated(self,add=1):
+		self.taskCreated += add
+		self.save()
+		return True
+
+	def updateScores(self,score):
+		self.scores += score
+		self.save()
+		return True
+		
 class Task(models.Model):
 	create_account = models.ForeignKey('Account', related_name='created_account', on_delete=models.CASCADE)
 	create_time = models.DateTimeField(default=None)
@@ -106,6 +137,7 @@ class Task(models.Model):
 		self.comment = data['comment']
 		self.score = data['score']
 		self.save()
+
 
 
 class TaskAction(models.Model):
