@@ -22,5 +22,6 @@ urlpatterns = [
 	url(r'^closetask$', views.task_controller.CloseTask),
 	url(r'^commenttask$', views.task_controller.CommentTask),
 	url(r'^browsealltask$', views.task_controller.BrowseAllTask),
-	url(r'^updateavatar$',views.userinfo_controller.ChangeAvatar),
+	#url(r'^updateavatar$',views.userinfo_controller.ChangeAvatar),
+	url(r'^gettaskactions$', views.task_controller.GetTaskActions),
 ]
