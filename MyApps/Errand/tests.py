@@ -100,33 +100,33 @@ class ViewsTestCase(TestCase):
 	def TaskSteps(self):
 		self.assertEqual(getData('login', account[0]), 'OK')
 		mytask = simplejson.loads(getData('addtask', task[0]))[0]
-		##test on taskRelated
-		#accounts = Task.objects.all()
-		#print(accounts)
-		#print(accounts.username,account[0]['username'])
-		#account0 = Account.objects.get(pk=account[0]['username'])
-		#taskCreated0 = account0.taskRelated.taskCreated
-		#self.assertEqual(taskCreated0,1)
-		
 		self.assertEqual(mytask['fields']['headline'], task[0]['headline'])
 		mytask = simplejson.loads(getData('changetask', dict(task[1], **{'pk':mytask['pk']})))[0]
 		self.assertEqual(mytask['fields']['headline'], task[1]['headline'])
+		#check the taskCreated after a new task is created
+		data = simplejson.loads(getData('orderbytaskcreated'))
+		ret = [{"nickname": "John", "taskCreated": 1}, {"nickname": "John", "taskCreated": 0}]
+		self.assertEqual(data,ret)
 		
 		mytaskaction = simplejson.loads(getData('addtaskaction', dict(taskAction[0], **{'pk':mytask['pk']})))[0]
 		self.assertEqual(mytaskaction['fields']['place'], taskAction[0]['place'])
 		mytaskaction = simplejson.loads(getData('changetaskaction', dict(taskAction[1], **{'pk':mytaskaction['pk']})))[0]
 		self.assertEqual(mytaskaction['fields']['place'], taskAction[1]['place'])
 		self.assertEqual(getData('removetaskaction', {'pk':mytaskaction['pk']}), 'OK')
-
 		mytaskaction = simplejson.loads(getData('addtaskaction', dict(taskAction[0], **{'pk':mytask['pk']})))[0]
 		self.assertEqual(mytaskaction['fields']['place'], taskAction[0]['place'])
 		mytaskaction = simplejson.loads(getData('changetaskaction', dict(taskAction[1], **{'pk':mytaskaction['pk']})))[0]
 		self.assertEqual(mytaskaction['fields']['place'], taskAction[1]['place'])
-		self.assertEqual(getData('removetask', {'pk':mytask['pk']}), 'OK')
+		self.assertEqual(getData('removetask', {'pk':mytask['pk']}), 'OK')		
 		self.assertEqual(getData('removetaskaction', {'pk':mytaskaction['pk']}), 'FAILED : The task action isn\'t existed.')			
 		self.assertEqual(getData('changetask', dict(task[1], **{'pk':mytask['pk']})), 'FAILED : The task isn\'t existed.')
 		self.assertEqual(getData('removetask', {'pk':mytask['pk']}), 'FAILED : The task isn\'t existed.')
-
+		
+		#check after remove
+		data = simplejson.loads(getData('orderbytaskcreated'))
+		ret = [{"nickname": "John", "taskCreated": 0}, {"nickname": "John", "taskCreated": 0}]
+		self.assertEqual(data,ret)
+		
 		#Waiting
 		mytask = simplejson.loads(getData('addtask', task[0]))[0]
 		self.assertEqual(mytask['fields']['headline'], task[0]['headline'])

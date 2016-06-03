@@ -9,6 +9,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.core import serializers
 from django.utils import timezone
 from django.db import transaction
+import json
 import random
 
 #----- This Delegator is used to judge if RSA key is generated -----
@@ -61,6 +62,7 @@ class Task_Controller:
 			account.taskRelated.updateTaskCreated()
 		task = self.CreateTask(account, data)
 		return HttpResponse(serializers.serialize("json", [task]))
+
 
 	@csrf_exempt
 	@Logged_in
@@ -460,30 +462,36 @@ account_controller = Account_Controller()
 class TaskRelated_Controller:
 	def CreateTaskRelated(self):
 		return TaskRelated.objects.create()
-
+	@csrf_exempt
 	def OrderByTaskCompleted(self, request):
 		with transaction.atomic():
-			accounts = Account.objects.order_by('-taskRelated_taskCompleted')
+			accounts = Account.objects.order_by('-taskRelated__taskCompleted')
 			if (accounts.count() < 5):
-				num = tasks.count()
+				num = accounts.count()
 			else: num = 5
-			return HttpResponse(serializers.serialize("json", accounts, fields = ('userinfo__nickname', 'taskRelated_taskCompleted')))
-
+			ret = {}
+			return HttpResponse(serializers.serialize("json", accounts, fields = ('userinfo__nickname', 'taskRelated__taskCompleted')))
+	@csrf_exempt
 	def OrderByTaskCreated(self, request):
 		with transaction.atomic():
-			accounts = Account.objects.order_by('-taskRelated_taskCreated')
+			accounts = Account.objects.order_by('-taskRelated__taskCreated')
 			if (accounts.count() < 5):
-				num = tasks.count()
+				num = accounts.count()
 			else: num = 5
-			return HttpResponse(serializers.serialize("json", accounts, fields = ('userinfo__nickname', 'taskRelated_taskCreated')))
-	
+		ret = accounts.values('userinfo__nickname','taskRelated__taskCreated')
+		list_result = [entry for entry in ret]
+		for entry in list_result:
+			entry['nickname'] = entry.pop('userinfo__nickname')
+			entry['taskCreated'] = entry.pop('taskRelated__taskCreated')
+		return HttpResponse(json.dumps(list_result))
+	@csrf_exempt
 	def OrderByScores(self, request):
 		with transaction.atomic():
-			accounts = Account.objects.order_by('-taskRelated_scores')
+			accounts = Account.objects.order_by('-taskRelated__scores')
 			if (accounts.count() < 5):
-				num = tasks.count()
+				num = accounts.count()
 			else: num = 5
-			return HttpResponse(serializers.serialize("json", accounts, fields = ('userinfo__nickname', 'taskRelated_scores')))
+			return HttpResponse(serializers.serialize("json", accounts, fields = ('userinfo__nickname', 'taskRelated__scores')))
 	
 	@csrf_exempt
 	def GetUserTask(self, request):
