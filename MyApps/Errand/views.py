@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import HttpResponse
 import rsa
 from . import forms
-from .models import Account, Userinfo, Task, TaskAction
+from .models import Account, Userinfo, Task, TaskAction, TaskRelated
 from django.views.decorators.csrf import csrf_exempt
 from django.core.mail import send_mail
 from django.core.mail import EmailMultiAlternatives
@@ -92,7 +92,8 @@ class Task_Controller:
 			#update the taskCreated and the taskCompleted and scores
 			with transaction.atomic():
 				task.create_account.taskRelated.updateTaskCreated(-1)
-				if hasattr(task, 'execute_account'):
+				if task.execute_account != None:
+				#if hasattr(task, 'execute_account'):
 					task.execute_account.taskRelated.updateTaskCompleted(-1)
 					if not task.scoreDefault():
 						task.execute_account.taskRelated.updateScores(-task.scores)
@@ -237,7 +238,7 @@ class Task_Controller:
 			task.Comment(data)
 			#update the score
 			with transaction.atomic():
-				task.execute_account.taskRelated.updateScores(data['scores'])
+				task.execute_account.taskRelated.updateScores(data['score'])
 			return HttpResponse('OK')
 
 	@csrf_exempt
@@ -319,7 +320,7 @@ class Userinfo_Controller:
 			else:
 				return HttpResponse('Form format error!')
 		return HttpResponse('allowed only via POST')
-	#not finished yet
+	#not finished yet??
 	@Logged_in
 	@csrf_exempt
 	def GetUserInfo(self, request):
@@ -331,7 +332,14 @@ class Userinfo_Controller:
 			target = accounts_account_controller.FindByUsername(data['pk'])
 		except Account.DoesNotExist:
 			return HttpResponse('Target user does not exist')
-		pass
+		relatedUser1 = Task.objects.filter(execute_account=myAccount).values['create_account']
+		relatedUser2 = Task.objects.filter(create_account=myAccount).values['execute_account']
+		relatedUser = relatedUser2|relatedUser1|myAccount 
+		if target in relatedUser:
+			return HttpResponse(serializers.serialize("json", [target.userinfo]))
+		else:
+			return HttpResponse(serializers.serialize("json", [target.userinfo.deger('phone_number')]))
+
 
 userinfo_controller = Userinfo_Controller()
 #----- End of Userinfo Controller -----
@@ -359,7 +367,7 @@ class Account_Controller:
 		taskRelated = taskRelated_controller.CreateTaskRelated()
 		activecode = 1111
 		account, created = Account.objects.get_or_create(username=username,
-			defaults = {'password' : password, 'activecode' : activecode, 'userinfo' : userinfo})
+			defaults = {'password' : password, 'activecode' : activecode, 'userinfo' : userinfo,'taskRelated':taskRelated})
 		if (created):
 			self.SendEmail(username, activecode)
 		else:
@@ -451,7 +459,7 @@ account_controller = Account_Controller()
 #----- End of Account Controller -----
 class TaskRelated_Controller:
 	def CreateTaskRelated(self):
-		return taskRelated.objects.create()
+		return TaskRelated.objects.create()
 
 	def OrderByTaskCompleted(self, request):
 		with transaction.atomic():
@@ -476,5 +484,24 @@ class TaskRelated_Controller:
 				num = tasks.count()
 			else: num = 5
 			return HttpResponse(serializers.serialize("json", accounts, fields = ('userinfo__nickname', 'taskRelated_scores')))
+	
+	@csrf_exempt
+	def GetUserTask(self, request):
+		valid, data = FormValid(request, forms.GetUserTask)
+		if (valid == False):
+			return HttpResponse('FAILED : Form format error.')
+		typeOfTask = data['typeOfTask']
+		state = data['state']
+		username = data['username']
+		myAccount = account_controller.FindByUsername(username)
+		with transaction.atomic():
+			if typeOfTask == 'execute_account':
+				tasks = Task.objects.filter(status=state, execute_account=myAccount ,pk__lt=data['pk']).order_by('-pk')
+			else:
+				tasks = Task.objects.filter(status=state, create_account=myAccount ,pk__lt=data['pk']).order_by('-pk')
+			if (tasks.count() < 5):
+				num = tasks.count()
+			else: num = 5
+			return HttpResponse(serializers.serialize("json", tasks[0:num]))
 ##()
 taskRelated_controller = TaskRelated_Controller()

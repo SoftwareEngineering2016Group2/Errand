@@ -4,10 +4,10 @@ from django.test import TestCase
 import urllib
 import http.cookiejar as cookielib
 from django.core.serializers import serialize,deserialize
-from .models import Account, Userinfo, Task, TaskAction
+from .models import Account, Userinfo, Task, TaskAction, TaskRelated
 import json
 import simplejson  
-
+#??abount the csrf_exempt
 cj = cookielib.CookieJar()
 cookie_support = urllib.request.HTTPCookieProcessor(cj)
 opener = urllib.request.build_opener(cookie_support, urllib.request.HTTPHandler)
@@ -74,29 +74,39 @@ class ViewsTestCase(TestCase):
 	
 	def LogOut(self):
 		self.assertEqual(getData('logout'), 'OK')
-	
+	#change password of account 0,1
 	def ChangePassword(self):
 		self.assertEqual(getData('changepassword', dict(account[0], **{'newpassword':'321'})), 'OK')
 		self.assertEqual(getData('changepassword', dict(account[1], **{'newpassword':'654'})), 'OK')
 		self.assertEqual(getData('changepassword', dict(account[2], **{'newpassword':'987'})), 'FAILED : The username isn\'t existed, or wrong password.')
 		account[0]['password'] = '321'
 		account[1]['password'] = '654'
-
+	#change userinfo
 	def ChangeUserinfo(self):
 		self.assertEqual(getData('login', account[0]), 'OK')
 		self.assertEqual(getData('changeuserinfo', userinfo[0]), 'OK')
 		self.assertEqual(getData('login', account[1]), 'OK')
 		self.assertEqual(getData('changeuserinfo', userinfo[1]), 'OK')
+		self.assertEqual(getData('changeuserinfo', userinfo[0]), 'OK')
+		self.assertEqual(simplejson.loads(getData('getmyuserinfo'))[0]['fields'], userinfo[0])
+		self.assertEqual(getData('changeuserinfo', userinfo[1]), 'OK')
+
 	def GetMyUserinfo(self):
 		self.assertEqual(getData('login', account[0]), 'OK')
 		self.assertEqual(simplejson.loads(getData('getmyuserinfo'))[0]['fields'], userinfo[0])
 		self.assertEqual(getData('login', account[1]), 'OK')
 		self.assertEqual(simplejson.loads(getData('getmyuserinfo'))[0]['fields'], userinfo[1])
-	
+
 	def TaskSteps(self):
 		self.assertEqual(getData('login', account[0]), 'OK')
 		mytask = simplejson.loads(getData('addtask', task[0]))[0]
-		##test
+		##test on taskRelated
+		#accounts = Task.objects.all()
+		#print(accounts)
+		#print(accounts.username,account[0]['username'])
+		#account0 = Account.objects.get(pk=account[0]['username'])
+		#taskCreated0 = account0.taskRelated.taskCreated
+		#self.assertEqual(taskCreated0,1)
 		
 		self.assertEqual(mytask['fields']['headline'], task[0]['headline'])
 		mytask = simplejson.loads(getData('changetask', dict(task[1], **{'pk':mytask['pk']})))[0]
@@ -216,12 +226,12 @@ class ViewsTestCase(TestCase):
 	def test(self):
 		self.Register()
 		self.Active()
-		self.LogIn()
-		self.LogOut()
-		self.ChangePassword()
+		#self.LogIn()
+		#self.LogOut()
+		#self.ChangePassword()
 		self.assertEqual(getData('active', dict(account[1], **{'activecode':'1111'})), 'OK')
-		self.ChangeUserinfo()
-		self.GetMyUserinfo()
+		#self.ChangeUserinfo()
+		#self.GetMyUserinfo()
 		self.TaskSteps()
 		self.TaskIsNotExist()
 		self.TaskPermission()

@@ -16,6 +16,10 @@ def CheckPhoneNumber(phone_number):
 def CheckScore(score):
 	if (score == None): return False
 	return (score >= 1 and score <= 5)
+def CheckTypeOfTask(typeOfTask):
+	return typeOfTask == 'execute_account' or typeOfTask == 'create_account'
+def CheckStateOfTask(state):
+	return state == 'A' or state == 'W' or state == 'C'
 class RegisterForm(forms.Form):
 	username = forms.CharField(max_length=10, label='username')
 	password = forms.CharField(max_length=16, label='password')
@@ -107,6 +111,8 @@ class CommentTaskForm(forms.Form):
 class BrowseAllTaskForm(forms.Form):
 	pk = forms.CharField(max_length=16, label="Task ID")
 
+class GetUserInfoForm(forms.Form):
+	username = forms.CharField(max_length=10,label="username")
 class SearchTaskForm(forms.Form):
 	pk = forms.CharField(max_length=16,label="Task ID")
 	text = forms.CharField(max_length=10,label="Search Info")
@@ -114,3 +120,15 @@ class SearchTaskForm(forms.Form):
 class GetTaskActionsForm(forms.Form):
 	pk = forms.CharField(max_length=16, label="Task ID")
 
+class GetUserTask(forms.Form):
+	username = forms.CharField(max_length=10, label="username")
+	typeOfTask = forms.CharField(max_length=20,label='typeOfTask')
+	state = forms.CharField(max_length=1,label='state')
+	def clean(self):
+		cleaned_data = super(RegisterForm, self).clean()
+		if (CheckUsername(cleaned_data.get('username')) == False):
+			self._errors['username'] = self.error_class([''])
+		if (CheckTypeOfTask(cleaned_data.get('typeOfTask')) == False):
+			self._errors['typeOfTask'] = self.error_class([''])
+		if (CheckStateOfTask(cleaned_data.get('state')) == False):
+			self._errors['state'] = self.error_class([''])

@@ -14,7 +14,8 @@ class Account(models.Model):
 	activecode = models.CharField(max_length=4)
 	active = models.BooleanField(default=False)
 	userinfo = models.OneToOneField('Userinfo', related_name='account')
-	#taskRelated = models.OneToOneField('TaskRelated',related_name='account')
+	#something strange??
+	taskRelated = models.OneToOneField('TaskRelated',related_name='account')
 	def Active(self, num):
 		if num == self.activecode:
 			self.active = True
@@ -98,8 +99,8 @@ class Task(models.Model):
 	status = models.CharField(max_length=1, choices=STATUS_CHOICES, default=WAITING)
 	headline = models.CharField(max_length=16, default='New Task')
 	detail = models.CharField(max_length=128, default='New Task')
-	response_accounts = models.ManyToManyField('Account', related_name='response_tasks')
-	execute_account = models.ForeignKey('Account', null=True, related_name='execute_tasks', on_delete=models.CASCADE)
+	response_accounts = models.ManyToManyField('Account', related_name='response_accounts')
+	execute_account = models.ForeignKey('Account', null=True, related_name='execute_account', on_delete=models.CASCADE)
 	#task_actions = models.ManyToManyField(TaskAction)
 	reward = models.CharField(max_length=16, default='1 RMB')
 	comment = models.CharField(max_length=128, default='No Comment')
@@ -156,4 +157,5 @@ class TaskAction(models.Model):
 		self.action = data['action']
 		self.save()
 		return True
+
 
