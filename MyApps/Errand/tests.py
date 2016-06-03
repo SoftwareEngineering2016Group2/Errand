@@ -39,6 +39,8 @@ account = [
 userinfo = [
 {'nickname':'Sun', 'sex' :'M', 'phone_number':'13888888888', 'birthday':'1994-10-11', 'signature':'Sleeping..'},
 {'nickname':'Zhang', 'sex' :'F', 'phone_number':'13999999999', 'birthday':'1995-10-11', 'signature':'Eating..'},
+{'nickname':'Sun', 'sex' :'M', 'birthday':'1994-10-11', 'signature':'Sleeping..'},
+{'nickname':'Zhang', 'sex' :'F', 'birthday':'1995-10-11', 'signature':'Eating..'},
 ]
 task = [
 {'headline':'qu kuai di', 'detail':'bang wo qu kuai di', 'reward':'ji tui fan'},
@@ -133,7 +135,9 @@ class ViewsTestCase(TestCase):
 		mytaskaction = simplejson.loads(getData('addtaskaction', dict(taskAction[0], **{'pk':mytask['pk']})))[0]
 		self.assertEqual(mytaskaction['fields']['place'], taskAction[0]['place'])
 		self.assertEqual(getData('login', account[1]), 'OK')
+		self.assertEqual(simplejson.loads(getData('getuserprofile', {'username':account[0]['username']})), userinfo[2])
 		self.assertEqual(getData('responsetask', {'pk':mytask['pk']}), 'OK')
+		self.assertEqual(simplejson.loads(getData('getuserprofile', {'username':account[0]['username']})), userinfo[2])
 		self.assertEqual(getData('login', account[0]), 'OK')
 		self.assertEqual(getData('selecttaskexecutor', {'pk':mytask['pk'], 'username':account[0]['username']}), 'FAILED : The user did\'t response the task.')
 		self.assertEqual(getData('closetask', {'pk':mytask['pk']}), 'FAILED : You can\'t close the task.')		
@@ -147,6 +151,7 @@ class ViewsTestCase(TestCase):
 		self.assertEqual(getData('removetaskaction', {'pk':mytaskaction['pk']}), 'FAILED : You can\'t remove the task action.')			
 		self.assertEqual(getData('selecttaskexecutor', {'pk':mytask['pk'], 'username':account[1]['username']}), 'FAILED : You can\'t select executor for the task.')		
 		self.assertEqual(getData('login', account[1]), 'OK')
+		self.assertEqual(simplejson.loads(getData('getuserprofile', {'username':account[0]['username']}))[0]['fields'], userinfo[0])
 		self.assertEqual(getData('responsetask', {'pk':mytask['pk']}), 'FAILED : You can\'t response the task.')
 		self.assertEqual(getData('login', account[0]), 'OK')
 		self.assertEqual(getData('commenttask', {'pk':mytask['pk'], 'score':5, 'comment':'Very Good'}), 'FAILED : You can\'t comment the task.')		
@@ -159,11 +164,13 @@ class ViewsTestCase(TestCase):
 		self.assertEqual(getData('removetaskaction', {'pk':mytaskaction['pk']}), 'FAILED : You can\'t remove the task action.')			
 		self.assertEqual(getData('selecttaskexecutor', {'pk':mytask['pk'], 'username':account[1]['username']}), 'FAILED : You can\'t select executor for the task.')		
 		self.assertEqual(getData('login', account[1]), 'OK')
+		self.assertEqual(simplejson.loads(getData('getuserprofile', {'username':account[0]['username']}))[0]['fields'], userinfo[0])
 		self.assertEqual(getData('responsetask', {'pk':mytask['pk']}), 'FAILED : You can\'t response the task.')
 		self.assertEqual(getData('login', account[0]), 'OK')
 		self.assertEqual(getData('closetask', {'pk':mytask['pk']}), 'OK')		
 		self.assertEqual(getData('commenttask', {'pk':mytask['pk'], 'score':5, 'comment':'Very Good'}), 'OK')		
-	
+		self.assertEqual(getData('login', account[1]), 'OK')		
+		self.assertEqual(simplejson.loads(getData('getuserprofile', {'username':account[0]['username']}))[0]['fields'], userinfo[0])
 	def TaskIsNotExist(self):
 		mytask = simplejson.loads(getData('addtask', task[0]))[0]
 		self.assertEqual(getData('changetask', dict(task[1], **{'pk':'-1'})), 'FAILED : The task isn\'t existed.')
