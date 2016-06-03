@@ -11,6 +11,7 @@ from django.utils import timezone
 from django.db import transaction
 import json
 from django.http import JsonResponse
+from django.db.models import Q
 import random
 
 #----- This Delegator is used to judge if RSA key is generated -----
@@ -458,11 +459,14 @@ class Account_Controller:
 				account.ChangePassword(data['newpassword'])
 				return HttpResponse('OK')
 	@csrf_exempt
+	@Logged_in
 	def GetUserProfile(self, request):
 		valid, data = FormValid(request, forms.GetUserProfileForm)
 		if(valid == False):
 			return HttpResponse('FAILED : Form format error.')
 		account = self.FindByUsername(data['username'])
+		if(account is None):
+			return HttpResponse('FAILED : The username isn\'t existed')
 		thisAccount = self.FindByUsername(request.session['username'])
 		userinfo = account.userinfo
 		userinfoDict = dict()
@@ -470,20 +474,9 @@ class Account_Controller:
 		userinfoDict['sex'] = userinfo.sex
 		userinfoDict['birthday'] = userinfo.birthday
 		userinfoDict['signature'] = userinfo.signature
-		taskLinkList = Task.objects.filter(create_account=account)
-		taskExecuteList = []
-		for task in taskLinkList:
-			taskExecuteList.append(task.execute_account);
-		if thisAccount in taskExecuteList:
-			return HttpResponse(serializers.serialize('json',[userinfo]))
-		else:
-			response = JsonResponse(userinfoDict)
-			return response
-		taskLinkList = Task.objects.filter(create_account=thisAccount)
-		taskExecuteList = []
-		for task in taskLinkList:
-			taskExecuteList.append(task.execute_account);
-		if account in taskResponseList:
+		taskList = Task.objects.filter((Q(create_account=account)&Q(execute_account=thisAccount))
+										|(Q(create_account=thisAccount)&Q(execute_account=account)))
+		if taskList.count() != 0:
 			return HttpResponse(serializers.serialize('json',[userinfo]))
 		else:
 			response = JsonResponse(userinfoDict)
@@ -526,7 +519,7 @@ class TaskRelated_Controller:
 	
 	@csrf_exempt
 	def GetUserTask(self, request):
-		valid, data = FormValid(request, forms.GetUserTask)
+		valid, data = FormValid(request, forms.GetUserTaskForm)
 		if (valid == False):
 			return HttpResponse('FAILED : Form format error.')
 		typeOfTask = data['typeOfTask']
@@ -535,12 +528,14 @@ class TaskRelated_Controller:
 		myAccount = account_controller.FindByUsername(username)
 		with transaction.atomic():
 			if typeOfTask == 'execute_account':
-				tasks = Task.objects.filter(status=state, execute_account=myAccount ,pk__lt=data['pk']).order_by('-pk')
+				tasks = Task.objects.filter(status=state, execute_account=myAccount, pk__lt=data['pk']).order_by('-pk')
 			else:
-				tasks = Task.objects.filter(status=state, create_account=myAccount ,pk__lt=data['pk']).order_by('-pk')
+				tasks = Task.objects.filter(status=state, create_account=myAccount, pk__lt=data['pk']).order_by('-pk')
 			if (tasks.count() < 5):
 				num = tasks.count()
 			else: num = 5
+			if tasks.count() == 0:
+				return HttpResponse('FAILED : No Task.')
 			return HttpResponse(serializers.serialize("json", tasks[0:num]))
 ##()
 taskRelated_controller = TaskRelated_Controller()

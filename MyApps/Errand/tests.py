@@ -135,10 +135,13 @@ class ViewsTestCase(TestCase):
 		mytaskaction = simplejson.loads(getData('addtaskaction', dict(taskAction[0], **{'pk':mytask['pk']})))[0]
 		self.assertEqual(mytaskaction['fields']['place'], taskAction[0]['place'])
 		self.assertEqual(getData('login', account[1]), 'OK')
+		self.assertEqual(simplejson.loads(getData('getusertask',{'username':account[0]['username'], 'typeOfTask':'create_account', 'state':'W', 'pk':9999999}))[0]['fields']['headline'], task[0]['headline'])
 		self.assertEqual(simplejson.loads(getData('getuserprofile', {'username':account[0]['username']})), userinfo[2])
 		self.assertEqual(getData('responsetask', {'pk':mytask['pk']}), 'OK')
+		self.assertEqual(getData('getuserprofile', {'username':account[2]['username']}), 'FAILED : The username isn\'t existed')
 		self.assertEqual(simplejson.loads(getData('getuserprofile', {'username':account[0]['username']})), userinfo[2])
 		self.assertEqual(getData('login', account[0]), 'OK')
+		self.assertEqual(getData('getusertask',{'username':account[1]['username'], 'typeOfTask':'execute_account', 'state':'W', 'pk':9999999}), 'FAILED : No Task.')
 		self.assertEqual(getData('selecttaskexecutor', {'pk':mytask['pk'], 'username':account[0]['username']}), 'FAILED : The user did\'t response the task.')
 		self.assertEqual(getData('closetask', {'pk':mytask['pk']}), 'FAILED : You can\'t close the task.')		
 		self.assertEqual(getData('commenttask', {'pk':mytask['pk'], 'score':5, 'comment':'Very Good'}), 'FAILED : You can\'t comment the task.')		
@@ -152,8 +155,10 @@ class ViewsTestCase(TestCase):
 		self.assertEqual(getData('selecttaskexecutor', {'pk':mytask['pk'], 'username':account[1]['username']}), 'FAILED : You can\'t select executor for the task.')		
 		self.assertEqual(getData('login', account[1]), 'OK')
 		self.assertEqual(simplejson.loads(getData('getuserprofile', {'username':account[0]['username']}))[0]['fields'], userinfo[0])
+		self.assertEqual(simplejson.loads(getData('getusertask',{'username':account[0]['username'], 'typeOfTask':'create_account', 'state':'A', 'pk':9999999}))[0]['fields']['headline'], task[0]['headline'])
 		self.assertEqual(getData('responsetask', {'pk':mytask['pk']}), 'FAILED : You can\'t response the task.')
 		self.assertEqual(getData('login', account[0]), 'OK')
+		self.assertEqual(simplejson.loads(getData('getusertask',{'username':account[1]['username'], 'typeOfTask':'execute_account', 'state':'A', 'pk':9999999}))[0]['fields']['headline'], task[0]['headline'])
 		self.assertEqual(getData('commenttask', {'pk':mytask['pk'], 'score':5, 'comment':'Very Good'}), 'FAILED : You can\'t comment the task.')		
 		self.assertEqual(getData('closetask', {'pk':mytask['pk']}), 'OK')	
 		
@@ -167,9 +172,11 @@ class ViewsTestCase(TestCase):
 		self.assertEqual(simplejson.loads(getData('getuserprofile', {'username':account[0]['username']}))[0]['fields'], userinfo[0])
 		self.assertEqual(getData('responsetask', {'pk':mytask['pk']}), 'FAILED : You can\'t response the task.')
 		self.assertEqual(getData('login', account[0]), 'OK')
-		self.assertEqual(getData('closetask', {'pk':mytask['pk']}), 'OK')		
+		self.assertEqual(getData('closetask', {'pk':mytask['pk']}), 'OK')
+		self.assertEqual(simplejson.loads(getData('getusertask',{'username':account[1]['username'], 'typeOfTask':'execute_account', 'state':'C', 'pk':9999999}))[0]['fields']['headline'], task[0]['headline'])		
 		self.assertEqual(getData('commenttask', {'pk':mytask['pk'], 'score':5, 'comment':'Very Good'}), 'OK')		
-		self.assertEqual(getData('login', account[1]), 'OK')		
+		self.assertEqual(getData('login', account[1]), 'OK')
+		self.assertEqual(simplejson.loads(getData('getusertask',{'username':account[0]['username'], 'typeOfTask':'create_account', 'state':'C', 'pk':9999999}))[0]['fields']['headline'], task[0]['headline'])		
 		self.assertEqual(simplejson.loads(getData('getuserprofile', {'username':account[0]['username']}))[0]['fields'], userinfo[0])
 	def TaskIsNotExist(self):
 		mytask = simplejson.loads(getData('addtask', task[0]))[0]
