@@ -107,7 +107,7 @@ class ViewsTestCase(TestCase):
 		self.assertEqual(mytask['fields']['headline'], task[1]['headline'])
 		#check the taskCreated after a new task is created
 		data = simplejson.loads(getData('orderbytaskcreated'))
-		ret = [{"nickname": "John", "taskCreated": 1}, {"nickname": "John", "taskCreated": 0}]
+		ret = [{"nickname": "Sun", "taskCreated": 1}, {"nickname": "Zhang", "taskCreated": 0}]
 		self.assertEqual(data,ret)
 		
 		mytaskaction = simplejson.loads(getData('addtaskaction', dict(taskAction[0], **{'pk':mytask['pk']})))[0]
@@ -126,7 +126,7 @@ class ViewsTestCase(TestCase):
 		
 		#check after remove
 		data = simplejson.loads(getData('orderbytaskcreated'))
-		ret = [{"nickname": "John", "taskCreated": 0}, {"nickname": "John", "taskCreated": 0}]
+		ret = [{"nickname": "Sun", "taskCreated": 0}, {"nickname": "Zhang", "taskCreated": 0}]
 		self.assertEqual(data,ret)
 		
 		#Waiting
@@ -237,7 +237,7 @@ class ViewsTestCase(TestCase):
 		#self.LogOut()
 		#self.ChangePassword()
 		self.assertEqual(getData('active', dict(account[1], **{'activecode':'1111'})), 'OK')
-		#self.ChangeUserinfo()
+		self.ChangeUserinfo()
 		#self.GetMyUserinfo()
 		self.TaskSteps()
 		self.TaskIsNotExist()

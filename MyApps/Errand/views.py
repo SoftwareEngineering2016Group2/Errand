@@ -464,7 +464,6 @@ class Account_Controller:
 			return HttpResponse('FAILED : Form format error.')
 		account = self.FindByUsername(data['username'])
 		thisAccount = self.FindByUsername(request.session['username'])
-		print("thisAccount's userinfo is "+thisAccount.userinfo.nickname)
 		userinfo = account.userinfo
 		userinfoDict = dict()
 		userinfoDict['nickname'] = userinfo.nickname
