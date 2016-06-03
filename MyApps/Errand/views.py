@@ -10,6 +10,7 @@ from django.core import serializers
 from django.utils import timezone
 from django.db import transaction
 import json
+from django.http import JsonResponse
 import random
 
 #----- This Delegator is used to judge if RSA key is generated -----
@@ -456,7 +457,38 @@ class Account_Controller:
 			else:
 				account.ChangePassword(data['newpassword'])
 				return HttpResponse('OK')
-
+	@csrf_exempt
+	def GetUserProfile(self, request):
+		valid, data = FormValid(request, forms.GetUserProfileForm)
+		if(valid == False):
+			return HttpResponse('FAILED : Form format error.')
+		account = self.FindByUsername(data['username'])
+		thisAccount = self.FindByUsername(request.session['username'])
+		print("thisAccount's userinfo is "+thisAccount.userinfo.nickname)
+		userinfo = account.userinfo
+		userinfoDict = dict()
+		userinfoDict['nickname'] = userinfo.nickname
+		userinfoDict['sex'] = userinfo.sex
+		userinfoDict['birthday'] = userinfo.birthday
+		userinfoDict['signature'] = userinfo.signature
+		taskLinkList = Task.objects.filter(create_account=account)
+		taskExecuteList = []
+		for task in taskLinkList:
+			taskExecuteList.append(task.execute_account);
+		if thisAccount in taskExecuteList:
+			return HttpResponse(serializers.serialize('json',[userinfo]))
+		else:
+			response = JsonResponse(userinfoDict)
+			return response
+		taskLinkList = Task.objects.filter(create_account=thisAccount)
+		taskExecuteList = []
+		for task in taskLinkList:
+			taskExecuteList.append(task.execute_account);
+		if account in taskResponseList:
+			return HttpResponse(serializers.serialize('json',[userinfo]))
+		else:
+			response = JsonResponse(userinfoDict)
+			return response
 account_controller = Account_Controller()
 #----- End of Account Controller -----
 class TaskRelated_Controller:

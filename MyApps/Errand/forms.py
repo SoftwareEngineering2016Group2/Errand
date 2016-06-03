@@ -132,3 +132,5 @@ class GetUserTask(forms.Form):
 			self._errors['typeOfTask'] = self.error_class([''])
 		if (CheckStateOfTask(cleaned_data.get('state')) == False):
 			self._errors['state'] = self.error_class([''])
+class GetUserProfileForm(forms.Form):
+	username = forms.CharField(max_length=16, label="Username To Getprofile")
