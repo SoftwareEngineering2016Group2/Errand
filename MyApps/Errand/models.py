@@ -14,7 +14,7 @@ class Account(models.Model):
 	activecode = models.CharField(max_length=4)
 	active = models.BooleanField(default=False)
 	userinfo = models.OneToOneField('Userinfo', related_name='account')
-	taskRelated = models.OneToOneField('TaskRelated',related_name='account')
+	#taskRelated = models.OneToOneField('TaskRelated',related_name='account')
 	def Active(self, num):
 		if num == self.activecode:
 			self.active = True
@@ -65,8 +65,8 @@ class Userinfo(models.Model):
 		return self.nickname
 
 class TaskRelated(models.Model):
-	taskCompleted = models.PositiveIntegerField(default=0)
-	taskCreated = models.PositiveIntegerField(default=0)
+	taskCompleted = models.IntegerField(default=0)
+	taskCreated = models.IntegerField(default=0)
 	scores = models.IntegerField(default=0)
 
 	def updateTaskCompleted(self, add=1):
@@ -136,6 +136,10 @@ class Task(models.Model):
 		self.comment = data['comment']
 		self.score = data['score']
 		self.save()
+	def getScore(self):
+		return self.score
+	def scoreDefault(self):
+		return self.score == -1
 
 
 
