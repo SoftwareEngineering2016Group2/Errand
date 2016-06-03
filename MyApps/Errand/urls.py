@@ -12,7 +12,6 @@ urlpatterns = [
 	url(r'^changeuserinfo$', views.userinfo_controller.ChangeUserinfo),
 	url(r'^getmyuserinfo$', views.userinfo_controller.GetMyUserinfo),
 	#see other's info
-	url(r'^getuserinfo$', views.userinfo_controller.GetUserInfo),
 	url(r'^addtask$', views.task_controller.AddTask),
 	url(r'^changetask$', views.task_controller.ChangeTask),
 	url(r'^removetask$', views.task_controller.RemoveTask),

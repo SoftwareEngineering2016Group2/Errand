@@ -111,21 +111,20 @@ class CommentTaskForm(forms.Form):
 class BrowseAllTaskForm(forms.Form):
 	pk = forms.CharField(max_length=16, label="Task ID")
 
-class GetUserInfoForm(forms.Form):
-	username = forms.CharField(max_length=10,label="username")
 class SearchTaskForm(forms.Form):
-	pk = forms.CharField(max_length=16,label="Task ID")
+	pk = forms.IntegerField(label="Task ID")
 	text = forms.CharField(max_length=10,label="Search Info")
 
 class GetTaskActionsForm(forms.Form):
 	pk = forms.CharField(max_length=16, label="Task ID")
 
-class GetUserTask(forms.Form):
+class GetUserTaskForm(forms.Form):
 	username = forms.CharField(max_length=10, label="username")
 	typeOfTask = forms.CharField(max_length=20,label='typeOfTask')
 	state = forms.CharField(max_length=1,label='state')
+	pk = forms.IntegerField(label='Task ID')
 	def clean(self):
-		cleaned_data = super(RegisterForm, self).clean()
+		cleaned_data = super(GetUserTaskForm, self).clean()
 		if (CheckUsername(cleaned_data.get('username')) == False):
 			self._errors['username'] = self.error_class([''])
 		if (CheckTypeOfTask(cleaned_data.get('typeOfTask')) == False):

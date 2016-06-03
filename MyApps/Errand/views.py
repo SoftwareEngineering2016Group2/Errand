@@ -12,6 +12,7 @@ from django.db import transaction
 from django.db.models import Q
 import json
 from django.http import JsonResponse
+from django.db.models import Q
 import random
 
 #----- This Delegator is used to judge if RSA key is generated -----
@@ -328,24 +329,6 @@ class Userinfo_Controller:
 				return HttpResponse('Form format error!')
 		return HttpResponse('allowed only via POST')
 	#not finished yet??
-	@Logged_in
-	@csrf_exempt
-	def GetUserInfo(self, request):
-		valid, data = FormValid(request, forms.GetUserInfoForm)
-		if(valid==False):
-			return HttpResponse('FAILED : Form format error.')
-		myAccount = account_controller.FindByUsername(request.session['username'])
-		try:
-			target = accounts_account_controller.FindByUsername(data['pk'])
-		except Account.DoesNotExist:
-			return HttpResponse('Target user does not exist')
-		relatedUser1 = Task.objects.filter(execute_account=myAccount).values['create_account']
-		relatedUser2 = Task.objects.filter(create_account=myAccount).values['execute_account']
-		relatedUser = relatedUser2|relatedUser1|myAccount 
-		if target in relatedUser:
-			return HttpResponse(serializers.serialize("json", [target.userinfo]))
-		else:
-			return HttpResponse(serializers.serialize("json", [target.userinfo.deger('phone_number')]))
 
 
 userinfo_controller = Userinfo_Controller()
@@ -462,11 +445,14 @@ class Account_Controller:
 				account.ChangePassword(data['newpassword'])
 				return HttpResponse('OK')
 	@csrf_exempt
+	@Logged_in
 	def GetUserProfile(self, request):
 		valid, data = FormValid(request, forms.GetUserProfileForm)
 		if(valid == False):
 			return HttpResponse('FAILED : Form format error.')
 		account = self.FindByUsername(data['username'])
+		if(account is None):
+			return HttpResponse('FAILED : The username isn\'t existed')
 		thisAccount = self.FindByUsername(request.session['username'])
 		userinfo = account.userinfo
 		userinfoDict = dict()
@@ -474,20 +460,9 @@ class Account_Controller:
 		userinfoDict['sex'] = userinfo.sex
 		userinfoDict['birthday'] = userinfo.birthday
 		userinfoDict['signature'] = userinfo.signature
-		taskLinkList = Task.objects.filter(create_account=account)
-		taskExecuteList = []
-		for task in taskLinkList:
-			taskExecuteList.append(task.execute_account);
-		if thisAccount in taskExecuteList:
-			return HttpResponse(serializers.serialize('json',[userinfo]))
-		else:
-			response = JsonResponse(userinfoDict)
-			return response
-		taskLinkList = Task.objects.filter(create_account=thisAccount)
-		taskExecuteList = []
-		for task in taskLinkList:
-			taskExecuteList.append(task.execute_account);
-		if account in taskResponseList:
+		taskList = Task.objects.filter((Q(create_account=account)&Q(execute_account=thisAccount))
+										|(Q(create_account=thisAccount)&Q(execute_account=account)))
+		if taskList.count() != 0:
 			return HttpResponse(serializers.serialize('json',[userinfo]))
 		else:
 			response = JsonResponse(userinfoDict)
@@ -538,7 +513,7 @@ class TaskRelated_Controller:
 		return HttpResponse(json.dumps(list_result))
 	@csrf_exempt
 	def GetUserTask(self, request):
-		valid, data = FormValid(request, forms.GetUserTask)
+		valid, data = FormValid(request, forms.GetUserTaskForm)
 		if (valid == False):
 			return HttpResponse('FAILED : Form format error.')
 		typeOfTask = data['typeOfTask']
@@ -547,12 +522,14 @@ class TaskRelated_Controller:
 		myAccount = account_controller.FindByUsername(username)
 		with transaction.atomic():
 			if typeOfTask == 'execute_account':
-				tasks = Task.objects.filter(status=state, execute_account=myAccount ,pk__lt=data['pk']).order_by('-pk')
+				tasks = Task.objects.filter(status=state, execute_account=myAccount, pk__lt=data['pk']).order_by('-pk')
 			else:
-				tasks = Task.objects.filter(status=state, create_account=myAccount ,pk__lt=data['pk']).order_by('-pk')
+				tasks = Task.objects.filter(status=state, create_account=myAccount, pk__lt=data['pk']).order_by('-pk')
 			if (tasks.count() < 5):
 				num = tasks.count()
 			else: num = 5
+			if tasks.count() == 0:
+				return HttpResponse('FAILED : No Task.')
 			return HttpResponse(serializers.serialize("json", tasks[0:num]))
 ##()
 taskRelated_controller = TaskRelated_Controller()
