@@ -156,7 +156,9 @@ class ViewsTestCase(TestCase):
 		self.assertEqual(getData('login', account[0]), 'OK')
 		self.assertEqual(getData('commenttask', {'pk':mytask['pk'], 'score':5, 'comment':'Very Good'}), 'FAILED : You can\'t comment the task.')		
 		self.assertEqual(getData('closetask', {'pk':mytask['pk']}), 'OK')	
-		
+
+
+
 		#Closed
 		self.assertEqual(getData('changetask', dict(task[1], **{'pk':mytask['pk']})), 'FAILED : You can\'t change the task.')
 		self.assertEqual(getData('removetask', {'pk':mytask['pk']}), 'FAILED : You can\'t remove the task.')
@@ -169,8 +171,14 @@ class ViewsTestCase(TestCase):
 		self.assertEqual(getData('login', account[0]), 'OK')
 		self.assertEqual(getData('closetask', {'pk':mytask['pk']}), 'OK')		
 		self.assertEqual(getData('commenttask', {'pk':mytask['pk'], 'score':5, 'comment':'Very Good'}), 'OK')		
-		self.assertEqual(getData('login', account[1]), 'OK')		
-		self.assertEqual(simplejson.loads(getData('getuserprofile', {'username':account[0]['username']}))[0]['fields'], userinfo[0])
+		#check after comment
+		data = simplejson.loads(getData('orderbytaskcompleted'))
+		ret = [{"nickname": "Zhang", "taskCompleted": 1}, {"nickname": "Sun", "taskCompleted": 0}]
+		self.assertEqual(data,ret)
+		data = simplejson.loads(getData('orderbyscores'))
+		ret = [{"nickname": "Zhang", "scores": 5}, {"nickname": "Sun", "scores": 0}]
+		self.assertEqual(data,ret)
+	
 	def TaskIsNotExist(self):
 		mytask = simplejson.loads(getData('addtask', task[0]))[0]
 		self.assertEqual(getData('changetask', dict(task[1], **{'pk':'-1'})), 'FAILED : The task isn\'t existed.')
@@ -227,6 +235,11 @@ class ViewsTestCase(TestCase):
 		tasks = simplejson.loads(getData('browsealltask', {'pk':'9999999'}))
 		self.assertEqual(len(tasks), 5)
 
+	def Search(self):
+		text = {'text':'er jiao','pk':'9999999'}
+		tasks = simplejson.loads(getData('searchtask', text))
+		print(tasks)
+
 	def TaskPermission(self):
 		pass
 		
@@ -243,3 +256,4 @@ class ViewsTestCase(TestCase):
 		self.TaskIsNotExist()
 		self.TaskPermission()
 		self.Browse()
+		self.Search()

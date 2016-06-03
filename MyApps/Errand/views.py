@@ -9,6 +9,7 @@ from django.core.mail import EmailMultiAlternatives
 from django.core import serializers
 from django.utils import timezone
 from django.db import transaction
+from django.db.models import Q
 import json
 from django.http import JsonResponse
 import random
@@ -93,13 +94,12 @@ class Task_Controller:
 			if (task.CanChange(request.session.get('username', None)) == False):
 				return HttpResponse('FAILED : You can\'t remove the task.')
 			#update the taskCreated and the taskCompleted and scores
-			with transaction.atomic():
-				task.create_account.taskRelated.updateTaskCreated(-1)
-				if task.execute_account != None:
-				#if hasattr(task, 'execute_account'):
-					task.execute_account.taskRelated.updateTaskCompleted(-1)
-					if not task.scoreDefault():
-						task.execute_account.taskRelated.updateScores(-task.scores)
+			task.create_account.taskRelated.updateTaskCreated(-1)
+			if task.execute_account != None:
+			#if hasattr(task, 'execute_account'):
+				task.execute_account.taskRelated.updateTaskCompleted(-1)
+				if not task.scoreDefault():
+					task.execute_account.taskRelated.updateScores(-task.scores)
 			task.delete()
 			return HttpResponse('OK')
 
@@ -202,7 +202,7 @@ class Task_Controller:
 				return HttpResponse('FAILED : The user did\'t response the task.')
 			task.Accept(response_account)
 			return HttpResponse('OK')
-
+	#may close multi times
 	@csrf_exempt
 	@Logged_in
 	def CloseTask(self, request):
@@ -215,10 +215,10 @@ class Task_Controller:
 				return HttpResponse('FAILED : The task isn\'t existed.')
 			if (task.CanClose(request.session.get('username', None)) == False):
 				return HttpResponse('FAILED : You can\'t close the task.')
-			task.Close()
 			#update taskCompleted of the execute_account
-			with transaction.atomic():
+			if task.status != 'C':
 				task.execute_account.taskRelated.updateTaskCompleted()
+			task.Close()
 			return HttpResponse('OK')
 	
 	@csrf_exempt
@@ -234,14 +234,12 @@ class Task_Controller:
 			if (task.CanComment(request.session.get('username', None)) == False):
 				return HttpResponse('FAILED : You can\'t comment the task.')
 			#if the task has been commented, subtract the score
-			with transaction.atomic():
-				if not task.scoreDefault():
-					task.execute_account.taskRelated.updateScores[-task.getScore()]
+			if not task.scoreDefault():
+				task.execute_account.taskRelated.updateScores[-task.getScore()]
 			
 			task.Comment(data)
 			#update the score
-			with transaction.atomic():
-				task.execute_account.taskRelated.updateScores(data['score'])
+			task.execute_account.taskRelated.updateScores(data['score'])
 			return HttpResponse('OK')
 
 	@csrf_exempt
@@ -272,12 +270,18 @@ class Task_Controller:
 	@csrf_exempt
 	@Logged_in
 	def SearchTask(self, request):
-		valid, data = FormValid(request,form.SearchTaskForm)
+		valid, data = FormValid(request,forms.SearchTaskForm)
 		if(valid == False):
 			return HttpResponse('Form format error')
 		text = data['text']
 		result = Task.objects.filter(status='W',pk__lt=data['pk']).order_by('-pk')
-		result = result.filter(Q(headline__contains=text)|Q(detail__contains=text))		
+		result1 = result.filter(Q(headline__contains=text)|Q(detail__contains=text))
+		result2 = TaskAction.objects.filter(place__contains=text).values_list('task_belong',flat=True)
+		result2 = result.filter(pk__in=result2)
+		#result3 = TaskAction.objects.filter(place__in=text).values_list('task_belong',flat=True)
+		#result3 = result.filter(pk__in=result3)
+		result = result1|result2
+		#if(result.count)
 		if (result.count() < 5):
 				num = result.count()
 		else: num = 5
@@ -500,8 +504,12 @@ class TaskRelated_Controller:
 			if (accounts.count() < 5):
 				num = accounts.count()
 			else: num = 5
-			ret = {}
-			return HttpResponse(serializers.serialize("json", accounts, fields = ('userinfo__nickname', 'taskRelated__taskCompleted')))
+		ret = accounts.values('userinfo__nickname','taskRelated__taskCompleted')
+		list_result = [entry for entry in ret]
+		for entry in list_result:
+			entry['nickname'] = entry.pop('userinfo__nickname')
+			entry['taskCompleted'] = entry.pop('taskRelated__taskCompleted')
+		return HttpResponse(json.dumps(list_result))
 	@csrf_exempt
 	def OrderByTaskCreated(self, request):
 		with transaction.atomic():
@@ -522,8 +530,12 @@ class TaskRelated_Controller:
 			if (accounts.count() < 5):
 				num = accounts.count()
 			else: num = 5
-			return HttpResponse(serializers.serialize("json", accounts, fields = ('userinfo__nickname', 'taskRelated__scores')))
-	
+		ret = accounts.values('userinfo__nickname','taskRelated__scores')
+		list_result = [entry for entry in ret]
+		for entry in list_result:
+			entry['nickname'] = entry.pop('userinfo__nickname')
+			entry['scores'] = entry.pop('taskRelated__scores')
+		return HttpResponse(json.dumps(list_result))
 	@csrf_exempt
 	def GetUserTask(self, request):
 		valid, data = FormValid(request, forms.GetUserTask)
