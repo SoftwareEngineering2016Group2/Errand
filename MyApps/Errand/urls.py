@@ -10,6 +10,7 @@ urlpatterns = [
 	url(r'^logout$', views.account_controller.LogOut),
 	url(r'^changepassword$', views.account_controller.ChangePassword),
 	url(r'^changeuserinfo$', views.userinfo_controller.ChangeUserinfo),
+	url(r'^uploadpicture$', views.userinfo_controller.UploadPicture),
 	url(r'^getmyuserinfo$', views.userinfo_controller.GetMyUserinfo),
 	url(r'^addtask$', views.task_controller.AddTask),
 	url(r'^changetask$', views.task_controller.ChangeTask),

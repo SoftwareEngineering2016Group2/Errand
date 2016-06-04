@@ -106,3 +106,6 @@ class BrowseAllTaskForm(forms.Form):
 	
 class GetTaskActionsForm(forms.Form):
 	pk = forms.CharField(max_length=16, label="Task ID")
+
+class UploadPictureForm(forms.Form):
+	image = forms.ImageField()

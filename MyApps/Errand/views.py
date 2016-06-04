@@ -2,7 +2,7 @@ from django.shortcuts import render
 from django.http import HttpResponse
 import rsa
 from . import forms
-from .models import Account, Userinfo, Task, TaskAction
+from .models import Account, Userinfo, Task, TaskAction#, HeadPhoto
 from django.views.decorators.csrf import csrf_exempt
 from django.core.mail import send_mail
 from django.core.mail import EmailMultiAlternatives
@@ -251,7 +251,8 @@ task_controller = Task_Controller();
 class Userinfo_Controller:
 
 	def CreateUserinfo(self):
-		return Userinfo.objects.create()
+		userinfo = Userinfo.objects.create()
+		return userinfo
 
 	@csrf_exempt
 	@Logged_in
@@ -270,6 +271,27 @@ class Userinfo_Controller:
 			userinfo = account_controller.FindByUsername(request.session['username']).userinfo
 			userinfo.ChangeUserinfo(data)
 			return HttpResponse('OK')
+	
+	@csrf_exempt
+	#@Logged_in
+	def UploadPicture(self, request):
+		if request.method == 'POST':
+			form = forms.UploadPictureForm(request.POST,request.FILES)
+			if form.is_valid():
+				#userinfo = account_controller.FindByUsername(request.session['username']).userinfo
+				userinfo = self.CreateUserinfo()
+				#print (userinfo.headphoto.photo)
+				#print (type(userinfo.headphoto.photo))
+				#headphoto = userinfo.headphoto.all()[0]
+				#headphoto.photo = form.cleaned_data['image']
+				#headphoto.save()
+				userinfo.head_photo = form.cleaned_data['image']
+				userinfo.save()
+				return HttpResponse(serializers.serialize("json", [userinfo.head_photo]))
+				#return HttpResponse('image upload success')
+			else: return HttpResponse('form invalid')
+		return HttpResponse('allowed only via POST')
+
 
 userinfo_controller = Userinfo_Controller()
 #----- End of Userinfo Controller -----

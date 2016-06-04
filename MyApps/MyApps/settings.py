@@ -135,3 +135,5 @@ EMAIL_PORT = 25
 EMAIL_HOST_USER = 'sunmengdexiaohao1@163.com'
 EMAIL_HOST_PASSWORD = 'sunmeng94snd'
 DEFAULT_FROM_EMAIL = 'sunmengdexiaohao1@163.com'
+MEDIA_ROOT = 'media/'
+MEDIA_URL = 'media/'

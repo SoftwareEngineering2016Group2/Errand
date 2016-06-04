@@ -85,11 +85,14 @@ class ViewsTestCase(TestCase):
 		self.assertEqual(getData('changeuserinfo', userinfo[0]), 'OK')
 		self.assertEqual(getData('login', account[1]), 'OK')
 		self.assertEqual(getData('changeuserinfo', userinfo[1]), 'OK')
+
 	def GetMyUserinfo(self):
 		self.assertEqual(getData('login', account[0]), 'OK')
-		self.assertEqual(simplejson.loads(getData('getmyuserinfo'))[0]['fields'], userinfo[0])
+		print (simplejson.loads(getData('getmyuserinfo'))[0]['fields']['signature'])
+		print (userinfo[0])
+		self.assertEqual(simplejson.loads(getData('getmyuserinfo'))[0]['fields']['signature'], userinfo[0]['signature'])
 		self.assertEqual(getData('login', account[1]), 'OK')
-		self.assertEqual(simplejson.loads(getData('getmyuserinfo'))[0]['fields'], userinfo[1])
+		self.assertEqual(simplejson.loads(getData('getmyuserinfo'))[0]['fields']['signature'], userinfo[1]['signature'])
 	
 	def TaskSteps(self):
 		self.assertEqual(getData('login', account[0]), 'OK')

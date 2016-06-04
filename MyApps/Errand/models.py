@@ -40,7 +40,7 @@ class Userinfo(models.Model):
 	phone_number = models.CharField(max_length=11, default="13000000000")
 	birthday = models.DateField(default='1900-1-1')
 	signature = models.CharField(max_length=128, blank=True, default="")
-
+	head_photo = models.ImageField(upload_to='head_pic')
 	def ChangeUserinfo(self, data):
 		self.nickname = data['nickname']
 		self.sex = data['sex']
@@ -52,8 +52,11 @@ class Userinfo(models.Model):
 
 	def __unicode__(self):
 		return self.nickname
-	
-
+'''
+class HeadPhoto(models.Model):
+	#photo = models.ImageField(upload_to='head_pic')
+	userinfo = models.ForeignKey('Userinfo', related_name='headphoto')
+'''
 class Task(models.Model):
 	create_account = models.ForeignKey('Account', related_name='created_account', on_delete=models.CASCADE)
 	create_time = models.DateTimeField(default=None)
