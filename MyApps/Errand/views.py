@@ -2,13 +2,17 @@ from django.shortcuts import render
 from django.http import HttpResponse
 import rsa
 from . import forms
-from .models import Account, Userinfo, Task, TaskAction
+from .models import Account, Userinfo, Task, TaskAction, TaskRelated
 from django.views.decorators.csrf import csrf_exempt
 from django.core.mail import send_mail
 from django.core.mail import EmailMultiAlternatives
 from django.core import serializers
 from django.utils import timezone
 from django.db import transaction
+from django.db.models import Q
+import json
+from django.http import JsonResponse
+from django.db.models import Q
 import random
 
 #----- This Delegator is used to judge if RSA key is generated -----
@@ -55,8 +59,13 @@ class Task_Controller:
 		valid, data = FormValid(request, forms.AddTaskForm)
 		if (valid == False):
 			return HttpResponse('FAILED : Form format error.')
-		task = self.CreateTask(account_controller.FindByUsername(request.session['username']), data)
+		account = account_controller.FindByUsername(request.session['username'])
+		#update the taskCreated
+		with transaction.atomic():
+			account.taskRelated.updateTaskCreated()
+		task = self.CreateTask(account, data)
 		return HttpResponse(serializers.serialize("json", [task]))
+
 
 	@csrf_exempt
 	@Logged_in
@@ -85,6 +94,13 @@ class Task_Controller:
 				return HttpResponse('FAILED : The task isn\'t existed.' )
 			if (task.CanChange(request.session.get('username', None)) == False):
 				return HttpResponse('FAILED : You can\'t remove the task.')
+			#update the taskCreated and the taskCompleted and scores
+			task.create_account.taskRelated.updateTaskCreated(-1)
+			if task.execute_account != None:
+			#if hasattr(task, 'execute_account'):
+				task.execute_account.taskRelated.updateTaskCompleted(-1)
+				if not task.scoreDefault():
+					task.execute_account.taskRelated.updateScores(-task.scores)
 			task.delete()
 			return HttpResponse('OK')
 
@@ -187,7 +203,7 @@ class Task_Controller:
 				return HttpResponse('FAILED : The user did\'t response the task.')
 			task.Accept(response_account)
 			return HttpResponse('OK')
-
+	#may close multi times
 	@csrf_exempt
 	@Logged_in
 	def CloseTask(self, request):
@@ -200,6 +216,9 @@ class Task_Controller:
 				return HttpResponse('FAILED : The task isn\'t existed.')
 			if (task.CanClose(request.session.get('username', None)) == False):
 				return HttpResponse('FAILED : You can\'t close the task.')
+			#update taskCompleted of the execute_account
+			if task.status != 'C':
+				task.execute_account.taskRelated.updateTaskCompleted()
 			task.Close()
 			return HttpResponse('OK')
 	
@@ -215,7 +234,13 @@ class Task_Controller:
 				return HttpResponse('FAILED : The task isn\'t existed.')
 			if (task.CanComment(request.session.get('username', None)) == False):
 				return HttpResponse('FAILED : You can\'t comment the task.')
+			#if the task has been commented, subtract the score
+			if not task.scoreDefault():
+				task.execute_account.taskRelated.updateScores[-task.getScore()]
+			
 			task.Comment(data)
+			#update the score
+			task.execute_account.taskRelated.updateScores(data['score'])
 			return HttpResponse('OK')
 
 	@csrf_exempt
@@ -242,6 +267,27 @@ class Task_Controller:
 			if (task == None):
 				return HttpResponse('FAILED : The task isn\'t existed.')
 			return HttpResponse(serializers.serialize("json", task.task_actions.all()))
+	#nedd to test chinese??
+	@csrf_exempt
+	@Logged_in
+	def SearchTask(self, request):
+		valid, data = FormValid(request,forms.SearchTaskForm)
+		if(valid == False):
+			return HttpResponse('Form format error')
+		text = data['text']
+		result = Task.objects.filter(status='W',pk__lt=data['pk']).order_by('-pk')
+		result1 = result.filter(Q(headline__contains=text)|Q(detail__contains=text))
+		result2 = TaskAction.objects.filter(place__contains=text).values_list('task_belong',flat=True)
+		result2 = result.filter(pk__in=result2)
+		#result3 = TaskAction.objects.filter(place__in=text).values_list('task_belong',flat=True)
+		#result3 = result.filter(pk__in=result3)
+		result = result1|result2
+		#if(result.count)
+		if (result.count() < 5):
+				num = result.count()
+		else: num = 5
+		return HttpResponse(serializers.serialize("json", result[0:num]))
+
 
 task_controller = Task_Controller();
 #----- End of Task Controller -----
@@ -269,7 +315,21 @@ class Userinfo_Controller:
 		with transaction.atomic():
 			userinfo = account_controller.FindByUsername(request.session['username']).userinfo
 			userinfo.ChangeUserinfo(data)
-			return HttpResponse('OK')
+			return HttpResponse('OK')	
+	@Logged_in
+	@csrf_exempt	
+	def ChangeAvatar(self, request):
+		if request.method == 'POST':
+			form = forms.AvatarUploadForm(request.POST,request.FILES)
+			if form.is_valid():
+				userinfo = account_controller.FindByUsername(request.session['username']).userinfo
+				userinfo.ChangeAvatar(form.cleaned_data['image'])
+				return HttpResponse('image upload success')
+			else:
+				return HttpResponse('Form format error!')
+		return HttpResponse('allowed only via POST')
+	#not finished yet??
+
 
 userinfo_controller = Userinfo_Controller()
 #----- End of Userinfo Controller -----
@@ -294,9 +354,10 @@ class Account_Controller:
 	def CreateAccount(self, username, password):
 		#activecode = random.randint(1000, 9999)
 		userinfo = userinfo_controller.CreateUserinfo()
+		taskRelated = taskRelated_controller.CreateTaskRelated()
 		activecode = 1111
 		account, created = Account.objects.get_or_create(username=username,
-			defaults = {'password' : password, 'activecode' : activecode, 'userinfo' : userinfo})
+			defaults = {'password' : password, 'activecode' : activecode, 'userinfo' : userinfo,'taskRelated':taskRelated})
 		if (created):
 			self.SendEmail(username, activecode)
 		else:
@@ -369,7 +430,7 @@ class Account_Controller:
 	def LogOut(self, request):
 		request.session['username'] = None
 		return HttpResponse('OK')
-
+	#to change the password, login is not required
 	@csrf_exempt
 	@RSA_valid
 	def ChangePassword(self, request):
@@ -383,6 +444,92 @@ class Account_Controller:
 			else:
 				account.ChangePassword(data['newpassword'])
 				return HttpResponse('OK')
-
+	@csrf_exempt
+	@Logged_in
+	def GetUserProfile(self, request):
+		valid, data = FormValid(request, forms.GetUserProfileForm)
+		if(valid == False):
+			return HttpResponse('FAILED : Form format error.')
+		account = self.FindByUsername(data['username'])
+		if(account is None):
+			return HttpResponse('FAILED : The username isn\'t existed')
+		thisAccount = self.FindByUsername(request.session['username'])
+		userinfo = account.userinfo
+		userinfoDict = dict()
+		userinfoDict['nickname'] = userinfo.nickname
+		userinfoDict['sex'] = userinfo.sex
+		userinfoDict['birthday'] = userinfo.birthday
+		userinfoDict['signature'] = userinfo.signature
+		taskList = Task.objects.filter((Q(create_account=account)&Q(execute_account=thisAccount))
+										|(Q(create_account=thisAccount)&Q(execute_account=account)))
+		if taskList.count() != 0:
+			return HttpResponse(serializers.serialize('json',[userinfo]))
+		else:
+			response = JsonResponse(userinfoDict)
+			return response
 account_controller = Account_Controller()
 #----- End of Account Controller -----
+class TaskRelated_Controller:
+	def CreateTaskRelated(self):
+		return TaskRelated.objects.create()
+	@csrf_exempt
+	def OrderByTaskCompleted(self, request):
+		with transaction.atomic():
+			accounts = Account.objects.order_by('-taskRelated__taskCompleted')
+			if (accounts.count() < 5):
+				num = accounts.count()
+			else: num = 5
+		ret = accounts.values('userinfo__nickname','taskRelated__taskCompleted')
+		list_result = [entry for entry in ret]
+		for entry in list_result:
+			entry['nickname'] = entry.pop('userinfo__nickname')
+			entry['taskCompleted'] = entry.pop('taskRelated__taskCompleted')
+		return HttpResponse(json.dumps(list_result))
+	@csrf_exempt
+	def OrderByTaskCreated(self, request):
+		with transaction.atomic():
+			accounts = Account.objects.order_by('-taskRelated__taskCreated')
+			if (accounts.count() < 5):
+				num = accounts.count()
+			else: num = 5
+		ret = accounts.values('userinfo__nickname','taskRelated__taskCreated')
+		list_result = [entry for entry in ret]
+		for entry in list_result:
+			entry['nickname'] = entry.pop('userinfo__nickname')
+			entry['taskCreated'] = entry.pop('taskRelated__taskCreated')
+		return HttpResponse(json.dumps(list_result))
+	@csrf_exempt
+	def OrderByScores(self, request):
+		with transaction.atomic():
+			accounts = Account.objects.order_by('-taskRelated__scores')
+			if (accounts.count() < 5):
+				num = accounts.count()
+			else: num = 5
+		ret = accounts.values('userinfo__nickname','taskRelated__scores')
+		list_result = [entry for entry in ret]
+		for entry in list_result:
+			entry['nickname'] = entry.pop('userinfo__nickname')
+			entry['scores'] = entry.pop('taskRelated__scores')
+		return HttpResponse(json.dumps(list_result))
+	@csrf_exempt
+	def GetUserTask(self, request):
+		valid, data = FormValid(request, forms.GetUserTaskForm)
+		if (valid == False):
+			return HttpResponse('FAILED : Form format error.')
+		typeOfTask = data['typeOfTask']
+		state = data['state']
+		username = data['username']
+		myAccount = account_controller.FindByUsername(username)
+		with transaction.atomic():
+			if typeOfTask == 'execute_account':
+				tasks = Task.objects.filter(status=state, execute_account=myAccount, pk__lt=data['pk']).order_by('-pk')
+			else:
+				tasks = Task.objects.filter(status=state, create_account=myAccount, pk__lt=data['pk']).order_by('-pk')
+			if (tasks.count() < 5):
+				num = tasks.count()
+			else: num = 5
+			if tasks.count() == 0:
+				return HttpResponse('FAILED : No Task.')
+			return HttpResponse(serializers.serialize("json", tasks[0:num]))
+##()
+taskRelated_controller = TaskRelated_Controller()

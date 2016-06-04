@@ -11,6 +11,7 @@ urlpatterns = [
 	url(r'^changepassword$', views.account_controller.ChangePassword),
 	url(r'^changeuserinfo$', views.userinfo_controller.ChangeUserinfo),
 	url(r'^getmyuserinfo$', views.userinfo_controller.GetMyUserinfo),
+	#see other's info
 	url(r'^addtask$', views.task_controller.AddTask),
 	url(r'^changetask$', views.task_controller.ChangeTask),
 	url(r'^removetask$', views.task_controller.RemoveTask),
@@ -22,5 +23,12 @@ urlpatterns = [
 	url(r'^closetask$', views.task_controller.CloseTask),
 	url(r'^commenttask$', views.task_controller.CommentTask),
 	url(r'^browsealltask$', views.task_controller.BrowseAllTask),
+	url(r'^searchtask$', views.task_controller.SearchTask),
+	#url(r'^updateavatar$',views.userinfo_controller.ChangeAvatar),
 	url(r'^gettaskactions$', views.task_controller.GetTaskActions),
+	url(r'^orderbytaskcompleted$', views.taskRelated_controller.OrderByTaskCompleted),
+	url(r'^orderbytaskcreated$', views.taskRelated_controller.OrderByTaskCreated),
+	url(r'^orderbyscores$', views.taskRelated_controller.OrderByScores),
+	url(r'^getusertask$',views.taskRelated_controller.GetUserTask),
+	url(r'^getuserprofile$', views.account_controller.GetUserProfile),
 ]
