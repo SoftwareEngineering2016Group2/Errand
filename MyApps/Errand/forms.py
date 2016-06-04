@@ -16,6 +16,10 @@ def CheckPhoneNumber(phone_number):
 def CheckScore(score):
 	if (score == None): return False
 	return (score >= 1 and score <= 5)
+def CheckTypeOfTask(typeOfTask):
+	return typeOfTask == 'execute_account' or typeOfTask == 'create_account'
+def CheckStateOfTask(state):
+	return state == 'A' or state == 'W' or state == 'C'
 class RegisterForm(forms.Form):
 	username = forms.CharField(max_length=10, label='username')
 	password = forms.CharField(max_length=16, label='password')
@@ -51,6 +55,9 @@ class UserinfoForm(forms.Form):
 		if (CheckPhoneNumber(cleaned_data.get('phone_number')) == False):
 			self._errors['phone_number'] = self.error_class([''])
 
+class AvatarUploadForm(forms.Form):
+	avatar = forms.ImageField()
+	
 class AddTaskForm(forms.Form):
 	headline = forms.CharField(max_length=16, label='Headline')
 	detail = forms.CharField(max_length=128, label='Detail')
@@ -103,9 +110,30 @@ class CommentTaskForm(forms.Form):
 
 class BrowseAllTaskForm(forms.Form):
 	pk = forms.CharField(max_length=16, label="Task ID")
-	
+
+class SearchTaskForm(forms.Form):
+	pk = forms.IntegerField(label="Task ID")
+	text = forms.CharField(max_length=10,label="Search Info")
+
 class GetTaskActionsForm(forms.Form):
 	pk = forms.CharField(max_length=16, label="Task ID")
 
+
 class UploadPictureForm(forms.Form):
 	image = forms.ImageField()
+
+class GetUserTaskForm(forms.Form):
+	username = forms.CharField(max_length=10, label="username")
+	typeOfTask = forms.CharField(max_length=20,label='typeOfTask')
+	state = forms.CharField(max_length=1,label='state')
+	pk = forms.IntegerField(label='Task ID')
+	def clean(self):
+		cleaned_data = super(GetUserTaskForm, self).clean()
+		if (CheckUsername(cleaned_data.get('username')) == False):
+			self._errors['username'] = self.error_class([''])
+		if (CheckTypeOfTask(cleaned_data.get('typeOfTask')) == False):
+			self._errors['typeOfTask'] = self.error_class([''])
+		if (CheckStateOfTask(cleaned_data.get('state')) == False):
+			self._errors['state'] = self.error_class([''])
+class GetUserProfileForm(forms.Form):
+	username = forms.CharField(max_length=16, label="Username To Getprofile")

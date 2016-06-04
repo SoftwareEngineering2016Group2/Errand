@@ -14,6 +14,8 @@ class Account(models.Model):
 	activecode = models.CharField(max_length=4)
 	active = models.BooleanField(default=False)
 	userinfo = models.OneToOneField('Userinfo', related_name='account')
+	#something strange??
+	taskRelated = models.OneToOneField('TaskRelated',related_name='account')
 	def Active(self, num):
 		if num == self.activecode:
 			self.active = True
@@ -39,6 +41,7 @@ class Userinfo(models.Model):
 	sex = models.CharField(max_length=1, choices=SEX_CHOICES, default=MALE)
 	phone_number = models.CharField(max_length=11, default="13000000000")
 	birthday = models.DateField(default='1900-1-1')
+	#avatar = models.ImageField(upload_to='avatar/',default='default.jpg')
 	signature = models.CharField(max_length=128, blank=True, default="")
 	head_photo = models.ImageField(upload_to='head_pic')
 	def ChangeUserinfo(self, data):
@@ -50,13 +53,39 @@ class Userinfo(models.Model):
 		self.save()
 		return True
 
+	def ChangeAvatar(self, avatar):
+		if self.avatar.name != 'defaul.jpg':
+			self.avatar.delete(False)
+		self.avatar = avatar
+		self.save()
+		return True
+
+
+
 	def __unicode__(self):
 		return self.nickname
-'''
-class HeadPhoto(models.Model):
-	#photo = models.ImageField(upload_to='head_pic')
-	userinfo = models.ForeignKey('Userinfo', related_name='headphoto')
-'''
+
+
+class TaskRelated(models.Model):
+	taskCompleted = models.IntegerField(default=0)
+	taskCreated = models.IntegerField(default=0)
+	scores = models.IntegerField(default=0)
+
+	def updateTaskCompleted(self, add=1):
+		self.taskCompleted += add
+		self.save()
+		return True
+
+	def updateTaskCreated(self,add=1):
+		self.taskCreated += add
+		self.save()
+		return True
+
+	def updateScores(self,score):
+		self.scores += score
+		self.save()
+		return True
+
 class Task(models.Model):
 	create_account = models.ForeignKey('Account', related_name='created_account', on_delete=models.CASCADE)
 	create_time = models.DateTimeField(default=None)
@@ -71,8 +100,8 @@ class Task(models.Model):
 	status = models.CharField(max_length=1, choices=STATUS_CHOICES, default=WAITING)
 	headline = models.CharField(max_length=16, default='New Task')
 	detail = models.CharField(max_length=128, default='New Task')
-	response_accounts = models.ManyToManyField('Account', related_name='response_tasks')
-	execute_account = models.ForeignKey('Account', null=True, related_name='execute_tasks', on_delete=models.CASCADE)
+	response_accounts = models.ManyToManyField('Account', related_name='response_accounts')
+	execute_account = models.ForeignKey('Account', null=True, related_name='execute_account', on_delete=models.CASCADE)
 	#task_actions = models.ManyToManyField(TaskAction)
 	reward = models.CharField(max_length=16, default='1 RMB')
 	comment = models.CharField(max_length=128, default='No Comment')
@@ -109,6 +138,11 @@ class Task(models.Model):
 		self.comment = data['comment']
 		self.score = data['score']
 		self.save()
+	def getScore(self):
+		return self.score
+	def scoreDefault(self):
+		return self.score == -1
+
 
 
 class TaskAction(models.Model):
@@ -124,4 +158,5 @@ class TaskAction(models.Model):
 		self.action = data['action']
 		self.save()
 		return True
+
 
