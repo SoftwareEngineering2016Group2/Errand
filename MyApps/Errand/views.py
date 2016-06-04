@@ -1,5 +1,6 @@
+#code:utf-8
 from django.shortcuts import render
-from django.http import HttpResponse
+from django.http import HttpResponse, StreamingHttpResponse
 import rsa
 from . import forms
 from .models import Account, Userinfo, Task, TaskAction, TaskRelated
@@ -36,7 +37,7 @@ def Logged_in(Fn):
 
 #----- Verify the legitimacy of the form -----
 def FormValid(request, form_model):
-	form = form_model(request.POST)
+	form = form_model(request.POST, request.FILES)
 	return form.is_valid(), form.cleaned_data
 
 
@@ -96,11 +97,6 @@ class Task_Controller:
 				return HttpResponse('FAILED : You can\'t remove the task.')
 			#update the taskCreated and the taskCompleted and scores
 			task.create_account.taskRelated.updateTaskCreated(-1)
-			if task.execute_account != None:
-			#if hasattr(task, 'execute_account'):
-				task.execute_account.taskRelated.updateTaskCompleted(-1)
-				if not task.scoreDefault():
-					task.execute_account.taskRelated.updateScores(-task.scores)
 			task.delete()
 			return HttpResponse('OK')
 
@@ -319,38 +315,41 @@ class Userinfo_Controller:
 			return HttpResponse('OK')
 	
 	@csrf_exempt
-	#@Logged_in
-	def UploadPicture(self, request):
-		if request.method == 'POST':
-			form = forms.UploadPictureForm(request.POST,request.FILES)
-			if form.is_valid():
-				#userinfo = account_controller.FindByUsername(request.session['username']).userinfo
-				userinfo = self.CreateUserinfo()
-				#print (userinfo.headphoto.photo)
-				#print (type(userinfo.headphoto.photo))
-				#headphoto = userinfo.headphoto.all()[0]
-				#headphoto.photo = form.cleaned_data['image']
-				#headphoto.save()
-				userinfo.head_photo = form.cleaned_data['image']
-				userinfo.save()
-				return HttpResponse(serializers.serialize("json", [userinfo.head_photo]))
-				#return HttpResponse('image upload success')
-			else: return HttpResponse('form invalid')
-		return HttpResponse('allowed only via POST')
-
 	@Logged_in
-	@csrf_exempt	
-	def ChangeAvatar(self, request):
-		if request.method == 'POST':
-			form = forms.AvatarUploadForm(request.POST,request.FILES)
-			if form.is_valid():
-				userinfo = account_controller.FindByUsername(request.session['username']).userinfo
-				userinfo.ChangeAvatar(form.cleaned_data['image'])
-				return HttpResponse('image upload success')
-			else:
-				return HttpResponse('Form format error!')
-		return HttpResponse('allowed only via POST')
+	def UploadHeadPhoto(self, request):
+		valid, data = FormValid(request, forms.UploadHeadPhotoForm)
+		if (valid == False):
+			return HttpResponse('FAILED : Form format error.')
+		with transaction.atomic():
+			userinfo = account_controller.FindByUsername(request.session['username']).userinfo
+			userinfo.head_photo = data['image']
+			userinfo.save()
+			return HttpResponse('OK')
 
+	@csrf_exempt
+	@Logged_in
+	def DownloadHeadPhoto(self, request):
+		valid, data = FormValid(request, forms.DownloadHeadPhotoForm)
+		if (valid == False):
+			return HttpResponse('FAILED : Form format error.')
+		with transaction.atomic():
+			account = account_controller.FindByUsername(data['username'])
+			if(account is None):
+				return HttpResponse('FAILED : The username isn\'t existed')
+			userinfo = account.userinfo
+			def file_iterator(file_name, chunk_size=512):
+				with open(file_name, 'rb') as f:
+					while True:
+						c = f.read(chunk_size)
+						if c:
+							yield c
+						else:
+							break
+			the_file_name = './' + userinfo.head_photo.url
+			response = StreamingHttpResponse(file_iterator(the_file_name))
+			response['Content-Type'] = 'application/octet-stream'
+			response['Content-Disposition'] = 'attachment;filename="{0}"'.format(the_file_name)
+			return response
 
 userinfo_controller = Userinfo_Controller()
 #----- End of Userinfo Controller -----
@@ -437,7 +436,7 @@ class Account_Controller:
 		if (valid == False):
 			return HttpResponse('FAILED : Form format error.')
 		with transaction.atomic():
-			account = self.FindByUsernameAndPassword(data['username'], data['password'])	
+			account = self.FindByUsernameAndPassword(data['username'], data['password'])
 			if account == None:
 				return HttpResponse('FAILED : The username isn\'t existed, or wrong password.')
 			elif account.active == False:
@@ -488,12 +487,18 @@ class Account_Controller:
 		else:
 			response = JsonResponse(userinfoDict)
 			return response
+
 account_controller = Account_Controller()
 #----- End of Account Controller -----
+
+
 class TaskRelated_Controller:
+
 	def CreateTaskRelated(self):
 		return TaskRelated.objects.create()
+
 	@csrf_exempt
+	@Logged_in
 	def OrderByTaskCompleted(self, request):
 		with transaction.atomic():
 			accounts = Account.objects.order_by('-taskRelated__taskCompleted')
@@ -506,7 +511,9 @@ class TaskRelated_Controller:
 			entry['nickname'] = entry.pop('userinfo__nickname')
 			entry['taskCompleted'] = entry.pop('taskRelated__taskCompleted')
 		return HttpResponse(json.dumps(list_result))
+
 	@csrf_exempt
+	@Logged_in
 	def OrderByTaskCreated(self, request):
 		with transaction.atomic():
 			accounts = Account.objects.order_by('-taskRelated__taskCreated')
@@ -519,7 +526,9 @@ class TaskRelated_Controller:
 			entry['nickname'] = entry.pop('userinfo__nickname')
 			entry['taskCreated'] = entry.pop('taskRelated__taskCreated')
 		return HttpResponse(json.dumps(list_result))
+		
 	@csrf_exempt
+	@Logged_in
 	def OrderByScores(self, request):
 		with transaction.atomic():
 			accounts = Account.objects.order_by('-taskRelated__scores')
@@ -532,25 +541,25 @@ class TaskRelated_Controller:
 			entry['nickname'] = entry.pop('userinfo__nickname')
 			entry['scores'] = entry.pop('taskRelated__scores')
 		return HttpResponse(json.dumps(list_result))
+	
 	@csrf_exempt
+	@Logged_in
 	def GetUserTask(self, request):
 		valid, data = FormValid(request, forms.GetUserTaskForm)
 		if (valid == False):
 			return HttpResponse('FAILED : Form format error.')
-		typeOfTask = data['typeOfTask']
-		state = data['state']
-		username = data['username']
-		myAccount = account_controller.FindByUsername(username)
+		myAccount = account_controller.FindByUsername(data['username'])
 		with transaction.atomic():
-			if typeOfTask == 'execute_account':
-				tasks = Task.objects.filter(status=state, execute_account=myAccount, pk__lt=data['pk']).order_by('-pk')
+			if data['typeOfTask'] == 'execute_account':
+				if (data['state'] == 'W'):
+					tasks = Task.objects.filter(status=data['state'], response_accounts=myAccount, pk__lt=data['pk']).order_by('-pk')
+				else:
+					tasks = Task.objects.filter(status=data['state'], execute_account=myAccount, pk__lt=data['pk']).order_by('-pk')
 			else:
-				tasks = Task.objects.filter(status=state, create_account=myAccount, pk__lt=data['pk']).order_by('-pk')
+				tasks = Task.objects.filter(status=data['state'], create_account=myAccount, pk__lt=data['pk']).order_by('-pk')
 			if (tasks.count() < 5):
 				num = tasks.count()
 			else: num = 5
-			if tasks.count() == 0:
-				return HttpResponse('FAILED : No Task.')
 			return HttpResponse(serializers.serialize("json", tasks[0:num]))
-##()
+
 taskRelated_controller = TaskRelated_Controller()

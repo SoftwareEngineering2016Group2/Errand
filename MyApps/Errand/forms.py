@@ -54,9 +54,6 @@ class UserinfoForm(forms.Form):
 			self._errors['sex'] = self.error_class([''])
 		if (CheckPhoneNumber(cleaned_data.get('phone_number')) == False):
 			self._errors['phone_number'] = self.error_class([''])
-
-class AvatarUploadForm(forms.Form):
-	avatar = forms.ImageField()
 	
 class AddTaskForm(forms.Form):
 	headline = forms.CharField(max_length=16, label='Headline')
@@ -78,6 +75,10 @@ class AddTaskActionForm(forms.Form):
 	end_time = forms.DateTimeField(label='End Time')
 	place = forms.CharField(max_length=16, label='Place')
 	action = forms.CharField(max_length=50, label='Action')
+	def clean(self):
+		cleaned_data = super(AddTaskActionForm, self).clean()
+		if (cleaned_data.get('start_time') > cleaned_data.get('end_time')):
+			self._errors['start_time'] = self.error_class([''])
 
 class ChangeTaskActionForm(forms.Form):
 	pk = forms.CharField(max_length=16, label="TaskAction ID")
@@ -118,9 +119,11 @@ class SearchTaskForm(forms.Form):
 class GetTaskActionsForm(forms.Form):
 	pk = forms.CharField(max_length=16, label="Task ID")
 
-
-class UploadPictureForm(forms.Form):
+class UploadHeadPhotoForm(forms.Form):
 	image = forms.ImageField()
+
+class DownloadHeadPhotoForm(forms.Form):
+	username = forms.CharField(max_length=10, label="username")
 
 class GetUserTaskForm(forms.Form):
 	username = forms.CharField(max_length=10, label="username")
@@ -135,5 +138,6 @@ class GetUserTaskForm(forms.Form):
 			self._errors['typeOfTask'] = self.error_class([''])
 		if (CheckStateOfTask(cleaned_data.get('state')) == False):
 			self._errors['state'] = self.error_class([''])
+
 class GetUserProfileForm(forms.Form):
 	username = forms.CharField(max_length=16, label="Username To Getprofile")

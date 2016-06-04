@@ -41,9 +41,8 @@ class Userinfo(models.Model):
 	sex = models.CharField(max_length=1, choices=SEX_CHOICES, default=MALE)
 	phone_number = models.CharField(max_length=11, default="13000000000")
 	birthday = models.DateField(default='1900-1-1')
-	#avatar = models.ImageField(upload_to='avatar/',default='default.jpg')
 	signature = models.CharField(max_length=128, blank=True, default="")
-	head_photo = models.ImageField(upload_to='head_pic')
+	head_photo = models.ImageField(upload_to='head_pic', default='head_pic/default.jpeg')
 	def ChangeUserinfo(self, data):
 		self.nickname = data['nickname']
 		self.sex = data['sex']
