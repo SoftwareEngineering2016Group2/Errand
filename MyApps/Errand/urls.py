@@ -31,4 +31,5 @@ urlpatterns = [
 	url(r'^orderbyscores$', views.taskRelated_controller.OrderByScores),
 	url(r'^getusertask$',views.taskRelated_controller.GetUserTask),
 	url(r'^getuserprofile$', views.account_controller.GetUserProfile),
+	url(r'^seetask$', views.task_controller.SeeTask),
 ]

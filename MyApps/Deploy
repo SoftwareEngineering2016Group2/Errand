@@ -14,14 +14,15 @@
 		</Directory>
 	</VirtualHost>
 
-3.Reload apache2: 
-	sudo service apache2 reload
-
-4.Change permissions:
+3.Change permissions:
 	sudo chgrp www-data MyApps
 	sudo chmod g+w MyApps
 	sudo chgrp www-data MyApps/db.sqlite3
 	sudo chmod g+w MyApps/db.sqlite3
 
-5.Add crontab entries:
+4.Add crontab entries:
 	python3 manage.py crontab add
+
+5.Reload apache2: 
+	sudo service apache2 reload
+

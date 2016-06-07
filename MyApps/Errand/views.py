@@ -263,7 +263,19 @@ class Task_Controller:
 			if (task == None):
 				return HttpResponse('FAILED : The task isn\'t existed.')
 			return HttpResponse(serializers.serialize("json", task.task_actions.all()))
-	#nedd to test chinese??
+
+	@csrf_exempt
+	@Logged_in
+	def SeeTask(self, request):
+		valid, data = FormValid(request, forms.SeeTaskForm)
+		if (valid == False):
+			return HttpResponse('FAILED : Form format error.')
+		with transaction.atomic():
+			task = self.FindTask(data['pk'])
+			if (task == None):
+				return HttpResponse('FAILED : The task isn\'t existed.')
+			return HttpResponse(serializers.serialize("json", [task]))
+
 	@csrf_exempt
 	@Logged_in
 	def SearchTask(self, request):
@@ -275,10 +287,7 @@ class Task_Controller:
 		result1 = result.filter(Q(headline__contains=text)|Q(detail__contains=text))
 		result2 = TaskAction.objects.filter(place__contains=text).values_list('task_belong',flat=True)
 		result2 = result.filter(pk__in=result2)
-		#result3 = TaskAction.objects.filter(place__in=text).values_list('task_belong',flat=True)
-		#result3 = result.filter(pk__in=result3)
 		result = result1|result2
-		#if(result.count)
 		if (result.count() < 5):
 				num = result.count()
 		else: num = 5
@@ -396,9 +405,6 @@ class Account_Controller:
 		(pubkey, privkey) = rsa.newkeys(1024)
 		request.session['pubkey'] = pubkey
 		request.session['privkey'] = privkey
-		'''return render(request, 'Errand/index.html', {
-           'form': forms.UserinfoForm,
-        })'''
 		return HttpResponse(pubkey)
 
 	@csrf_exempt
@@ -480,13 +486,17 @@ class Account_Controller:
 		userinfoDict['sex'] = userinfo.sex
 		userinfoDict['birthday'] = userinfo.birthday
 		userinfoDict['signature'] = userinfo.signature
+		userinfoDict['score'] = account.taskRelated.scores
+		userinfoDict['taskCreated'] = account.taskRelated.taskCreated
+		userinfoDict['taskCompleted'] = account.taskRelated.taskCompleted
 		taskList = Task.objects.filter((Q(create_account=account)&Q(execute_account=thisAccount))
 										|(Q(create_account=thisAccount)&Q(execute_account=account)))
-		if taskList.count() != 0:
-			return HttpResponse(serializers.serialize('json',[userinfo]))
+		if (taskList.count() != 0 or request.session['username'] == data['username']):
+			userinfoDict['phone_number'] = userinfo.phone_number;
 		else:
-			response = JsonResponse(userinfoDict)
-			return response
+			userinfoDict['phone_number'] = ""
+		response = JsonResponse(userinfoDict)
+		return response
 
 account_controller = Account_Controller()
 #----- End of Account Controller -----

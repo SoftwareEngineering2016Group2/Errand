@@ -112,6 +112,9 @@ class CommentTaskForm(forms.Form):
 class BrowseAllTaskForm(forms.Form):
 	pk = forms.CharField(max_length=16, label="Task ID")
 
+class SeeTaskForm(forms.Form):
+	pk = forms.CharField(max_length=16, label="Task ID")
+
 class SearchTaskForm(forms.Form):
 	pk = forms.IntegerField(label="Task ID")
 	text = forms.CharField(max_length=10,label="Search Info")
