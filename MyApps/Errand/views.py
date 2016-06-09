@@ -22,6 +22,7 @@ def RSA_valid(Fn):
 		pubkey = request.session.get('pubkey', None)
 		privkey = request.session.get('privkey', None)
 		if privkey == None:
+			print ('Please request for RSA')
 			return HttpResponse('Please request for RSA')
 		return Fn(self, request)
 	return Delegator
@@ -31,6 +32,7 @@ def Logged_in(Fn):
 	def Delegator(self, request):
 		username = request.session.get('username', None)
 		if username == None:
+			print ('Please log in.')
 			return HttpResponse('Please log in.')
 		return Fn(self, request)
 	return Delegator
@@ -38,6 +40,8 @@ def Logged_in(Fn):
 #----- Verify the legitimacy of the form -----
 def FormValid(request, form_model):
 	form = form_model(request.POST, request.FILES)
+	if (form.is_valid() == False):
+		print ('Form invalid')
 	return form.is_valid(), form.cleaned_data
 
 
